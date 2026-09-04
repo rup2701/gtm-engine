@@ -1,44 +1,54 @@
-import { pgTable, text, timestamp, uuid, varchar, jsonb, boolean, index, integer, real } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, boolean, integer, real, index, jsonb } from 'drizzle-orm/pg-core';
 
 export const batches = pgTable('batches', {
   id: uuid('id').defaultRandom().primaryKey(),
-  contextHash: varchar('context_hash', { length: 64 }).notNull(), // For version control (Point 8)
+  contextHash: varchar('context_hash', { length: 64 }).notNull(),
+  weekKey: varchar('week_key', { length: 10 }), // ✅ added
   generatedAt: timestamp('generated_at').defaultNow().notNull(),
   postCount: integer('post_count').default(0),
-  status: varchar('status', { length: 20 }).default('draft'), // draft, approved, archived
+  status: varchar('status', { length: 20 }).default('draft'),
 });
 
+// 1. Define the table
 export const posts = pgTable('posts', {
   id: uuid('id').defaultRandom().primaryKey(),
   batchId: uuid('batch_id').references(() => batches.id).notNull(),
   
-  // Scheduling
   scheduledAt: timestamp('scheduled_at').notNull(),
-  dayOfWeek: varchar('day_of_week', { length: 10 }).notNull(), // Monday, Tuesday...
+  dayOfWeek: varchar('day_of_week', { length: 10 }).notNull(),
   
-  // Content
-  platform: varchar('platform', { length: 20 }).notNull(), // twitter, linkedin, reddit
-  category: varchar('category', { length: 20 }).notNull(), // design, engineering, etc.
+  platform: varchar('platform', { length: 20 }).notNull(),
+  category: varchar('category', { length: 20 }).notNull(),
   content: text('content').notNull(),
-  hook: text('hook'), // First line for preview cards
+  hook: text('hook'),
   
-  // Status & Editing
-  status: varchar('status', { length: 20 }).default('draft').notNull(), // draft, queued, published, failed
+  status: varchar('status', { length: 20 }).default('draft').notNull(),
   editedByUser: boolean('edited_by_user').default(false),
-  originalContent: text('original_content'), // Store pre-edit version for diff
+  originalContent: text('original_content'),
   
-  // Performance (Point 4 future-proofing)
+  contextHash: varchar('context_hash', { length: 64 }),
+  weekKey: varchar('week_key', { length: 10 }),
+  
   impressions: integer('impressions').default(0),
   clicks: integer('clicks').default(0),
   engagementRate: real('engagement_rate').default(0),
   
-  // Metadata
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => ({
-  scheduledIdx: index('scheduled_idx').on(table.scheduledAt, table.status),
-  batchIdx: index('batch_idx').on(table.batchId),
-}));
+});
+
+// 2. Define indexes separately using the table reference
+// export const scheduledIdx = index('scheduled_idx')
+//   .on(posts.scheduledAt, posts.status);
+
+// export const batchIdx = index('batch_idx')
+//   .on(posts.batchId);
+
+// export const contextIdx = index('context_idx')
+//   .on(posts.contextHash);
+
+// export const weekIdx = index('week_idx')
+//   .on(posts.weekKey);
 
 export const userConfig = pgTable('user_config', {
   id: uuid('id').defaultRandom().primaryKey(),

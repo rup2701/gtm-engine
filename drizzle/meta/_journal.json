@@ -8,6 +8,20 @@
       "when": 1788547916913,
       "tag": "0000_absurd_hercules",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788561627464,
+      "tag": "0001_warm_betty_ross",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788564330135,
+      "tag": "0002_vengeful_iron_lad",
+      "breakpoints": true
     }
   ]
 }

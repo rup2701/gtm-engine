@@ -1,11 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs/promises';
 import path from 'path';
-// import 'dotenv/config'; // Ensure environment variables are loaded
+import 'dotenv/config'; // Ensure environment variables are loaded
 import { GoogleGenAI } from '@google/genai';
+import { batches, posts } from '@/db/schema';
+import { db } from '@/db';
+import crypto from 'crypto';
+
+import { getNextWeekDate, getWeekIdentifier } from '@/lib/date-utils';
+import { eq, and } from 'drizzle-orm';
+import { index } from 'drizzle-orm/pg-core/indexes';
 
 // Type-safe category enforcement matching your prompt requirements
 const VALID_CATEGORIES = ['design', 'engineering', 'ux', 'marketing', 'launch', 'build'] as const;
+
+type GeneratedPost = {
+  category: string;
+  platform: string;
+  content: string;
+  day: string;
+  time: string;
+}
 
 async function loadContextFile(filename: string): Promise<string> {
   try {
@@ -35,6 +51,47 @@ export async function POST(request: NextRequest) {
         { error: 'appnomics_master.md is required but was not found in /data directory.' },
         { status: 400 }
       );
+    }
+
+    // Get current week key (e.g., "2025-W15")
+    const weekKey = getWeekIdentifier(new Date());
+    console.log(`Generating content for week: ${weekKey}`);
+    // return NextResponse.json({
+    //   success: false,
+    //   message: 'Content generation is temporarily disabled for testing. Please enable the generation logic.',
+    // });
+
+    // Build context with week + website content (for versioning)
+    const contextString = `${weekKey}:${appnomicsContext}`;
+
+    const contextHash = crypto
+      .createHash('sha256')
+      .update(contextString)
+      .digest('hex');
+
+    // Check for existing batch
+    // Check if a batch already exists for this week + context
+    const [existingBatch] = await db.select()
+      .from(posts)
+      .where(
+        and(
+          eq(posts.contextHash, contextHash),
+          eq(posts.status, 'draft'),
+          eq(posts.weekKey, weekKey)
+        )
+      )
+      .limit(1);
+
+    if (existingBatch) {
+      return NextResponse.json({
+        success: false,
+        message: 'Batch already exists for this week.',
+        batchId: existingBatch.batchId,
+      }, { status: 200 }); // ← 200 OK so frontend can handle gracefully
+
+        // Option B: Force regenerate by deleting old batch
+        // await db.delete(posts).where(eq(posts.batchId, existingBatch.batchId));
+        // Then continue to create new batch
     }
 
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
@@ -78,30 +135,82 @@ export async function POST(request: NextRequest) {
       Output the result in a clean, machine-parsable Markdown schedule complete with timestamps, categories, target platforms, and full post text.`;
 
     // 4. Generate content
+    // Add this to your generateContent call
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash', // Still utilizing the working active production cluster
-      contents:  [{ role: 'user', parts: [{ text: prompt }] }],
+      model: 'gemini-2.5-flash',
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              day: { type: "STRING", description: "Monday, Tuesday, etc." },
+              time: { type: "STRING", description: "24-hour format without timezone, e.g. '09:00'" },
+              category: { type: "STRING", enum: [...VALID_CATEGORIES] },
+              platform: { type: "STRING", enum: ["twitter", "linkedin", "reddit"] },
+              content: { type: "STRING", description: "Full post text, platform-native formatting" },
+              hook: { type: "STRING", description: "First line hook for preview cards" }
+            },
+            required: ["day", "time", "category", "platform", "content"]
+          }
+        }
+      }
     });
 
+    
     const text = response.text;
-
     console.log('Generated content', text);
-
+    
     if (!text) {
       throw new Error('Vertex AI returned empty content. Check model permissions and quota.');
     }
 
+
+    const genPosts = JSON.parse(response.text);
+    // const post = genPosts[0]; // Sample post for logging
+    // const dateStr = `${getNextWeekDate(post.day)}T${post.time}`;
+    // console.log('dateStr sample:', dateStr);
+ 
+    const batchId = uuidv4(); // Unique batch identifier for this generation
+
+    await db.insert(batches).values({
+      id: batchId,
+      contextHash: contextHash,
+      weekKey: weekKey, // ✅ now exists
+      postCount: genPosts.length,
+      status: 'draft',
+    });
+
+    
+    // Inside your API route
+    const savedPosts = await db.insert(posts).values(
+      genPosts.map((post: GeneratedPost) => ({
+        batchId: batchId,
+        weekKey: weekKey,
+        dayOfWeek: post.day, 
+        contextHash: contextHash,
+        category: post.category,
+        platform: post.platform,
+        content: post.content,
+        status: 'draft',
+        scheduledAt: new Date(`${getNextWeekDate(post.day)}T${post.time}`),
+        day: post.day,
+        time: post.time,
+        editedContent: null,
+        publishedAt: null,
+        analytics: {},
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }))
+    ).returning() as unknown[]; // ← returns saved posts with IDs
+
     return NextResponse.json({
       success: true,
-      schedule: text,
-      metadata: {
-        generatedAt: new Date().toISOString(),
-        model: 'gemini-2.5-flash',
-        contextFilesLoaded: {
-          creativeGray: !!creativeGrayContext,
-          appnomics: !!appnomicsContext,
-        },
-      },
+      batchId: batchId,
+      postCount: savedPosts.length,
+      message: `${savedPosts.length} posts staged for review.`
     });
   } catch (error) {
     console.error('Content Calendar Generation Failed:', error);
