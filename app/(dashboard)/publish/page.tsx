@@ -1,7 +1,7 @@
 // app/dashboard/staging/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, RefreshCw, Edit, Send } from 'lucide-react';
 
 type Post = {
@@ -109,6 +109,19 @@ export default function StagingPage() {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState('');
+  const [hoveredPost, setHoveredPost] = useState<string | null>(null);
+  const hoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showPostDetails = (postId: string) => {
+    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+    hoverTimeout.current = setTimeout(() => setHoveredPost(postId), 500);
+  };
+
+  const hidePostDetails = () => {
+    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+    hoverTimeout.current = null;
+    setHoveredPost(null);
+  };
 
   const getWeekKey = (offset: number) => {
     const monday = getMondayDate(offset);
@@ -373,11 +386,11 @@ export default function StagingPage() {
             return (
               <div
                 key={day}
-                className="bg-white rounded-xl border shadow-sm overflow-hidden flex flex-col"
+                className="bg-white rounded-xl border shadow-sm overflow-visible flex flex-col"
               >
                 {/* Day header */}
                 <div
-                  className={`px-4 py-3 border-b ${
+                  className={`rounded-t-xl px-4 py-3 border-b ${
                     isToday(dayDate) ? 'bg-indigo-50' : 'bg-gray-50'
                   }`}
                 >
@@ -409,7 +422,9 @@ export default function StagingPage() {
                       return (
                         <div
                           key={post.id}
-                          className={`p-3 rounded-lg border transition-all ${
+                          onMouseEnter={() => showPostDetails(post.id)}
+                          onMouseLeave={hidePostDetails}
+                          className={`relative p-3 rounded-lg border transition-all ${
                             post.status === 'dropped'
                               ? 'opacity-50 bg-gray-50'
                               : post.status === 'published'
@@ -417,6 +432,27 @@ export default function StagingPage() {
                               : 'bg-white hover:shadow-md'
                           }`}
                         >
+                          {hoveredPost === post.id && (
+                            <div
+                              role="tooltip"
+                              className="absolute left-0 top-full z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-lg border border-gray-200 bg-[#f8f8f8] p-4 text-left shadow-xl"
+                            >
+                              <div className="mb-2 flex items-center justify-between gap-3 border-b border-gray-100 pb-2">
+                                <span className="font-semibold text-gray-900">
+                                  {PLATFORM_LABELS[post.platform]} post
+                                </span>
+                                <span className="text-xs capitalize text-gray-500">
+                                  {post.status}
+                                </span>
+                              </div>
+                              <p className="whitespace-pre-wrap text-[17px] leading-6 text-gray-700">
+                                {displayContent}
+                              </p>
+                              <div className="mt-3 text-xs text-gray-500">
+                                {new Date(post.scheduledAt).toLocaleString()} · {post.category}
+                              </div>
+                            </div>
+                          )}
                           <div className="flex items-start justify-between">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 text-sm flex-wrap">
