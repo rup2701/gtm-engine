@@ -32,8 +32,8 @@ export default function DashboardPage() {
       <div className="max-w-5xl mx-auto space-y-8">
         <div className="flex items-center justify-between border-b border-gray-200 pb-6">
           <div>
-            <h1 className="text-xl font-semibold tracking-tight">Appnomics Content Engine</h1>
-            <p className="text-sm text-gray-500">Vertex AI Pipeline • Project: instaroom-501622</p>
+            <h1 className="text-2xl font-bold tracking-tight">Generate</h1>
+            {/* <p className="text-sm text-gray-500">Vertex AI Pipeline • Project: instaroom-501622</p> */}
           </div>
           <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />

@@ -71,7 +71,7 @@ export default function SettingsPage() {
       setTimeout(() => setSuccessMessage(null), 3000);
     }, 600);
   };
-  
+
   useEffect(() => {
     fetch('/api/settings')
       .then(res => res.json())
@@ -92,7 +92,7 @@ export default function SettingsPage() {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-200 pb-6">
           <div>
-            <h1 className="text-xl font-semibold tracking-tight">Command Center Settings</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Command Center</h1>
             <p className="text-sm text-gray-500">Manage social API keys, publishing endpoints, and agent rules.</p>
           </div>
           {successMessage && (
@@ -103,6 +103,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Social Channels Section */}
+        {/* <h3>Publishing Channels</h3> */}
         <div className="space-y-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <div>
             <h2 className="text-sm font-semibold text-gray-900">Connected Channels</h2>
