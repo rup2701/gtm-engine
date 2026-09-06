@@ -79,3 +79,66 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
+
+
+// app/api/settings/route.ts
+// import { NextRequest, NextResponse } from 'next/server';
+// import { db } from '@/db';
+// import { userSettings } from '@/db/schema';
+// import { eq } from 'drizzle-orm';
+// import { encrypt, decrypt } from '@/lib/encryption'; // You'll need this
+
+// export async function PUT(request: NextRequest) {
+//   try {
+//     const body = await request.json();
+//     const { 
+//       userId,
+//       twitterApiKey, 
+//       twitterApiSecret,
+//       linkedinAccessToken,
+//       redditUsername,
+//       redditPassword,
+//       publishTimes,
+//       frequencyMin,
+//       frequencyMax,
+//       platforms,
+//       autoPublish,
+//       tone,
+//       icp
+//     } = body;
+
+//     // Encrypt sensitive data
+//     const encryptedTwitterKey = twitterApiKey ? encrypt(twitterApiKey) : undefined;
+//     const encryptedTwitterSecret = twitterApiSecret ? encrypt(twitterApiSecret) : undefined;
+//     const encryptedLinkedInToken = linkedinAccessToken ? encrypt(linkedinAccessToken) : undefined;
+
+//     const [settings] = await db.update(userSettings)
+//       .set({
+//         twitterApiKey: encryptedTwitterKey,
+//         twitterApiSecret: encryptedTwitterSecret,
+//         linkedinAccessToken: encryptedLinkedInToken,
+//         redditUsername,
+//         redditPassword: redditPassword ? encrypt(redditPassword) : undefined,
+//         publishTimes,
+//         frequencyMin,
+//         frequencyMax,
+//         platforms,
+//         autoPublish,
+//         tone,
+//         icp,
+//         updatedAt: new Date()
+//       })
+//       .where(eq(userSettings.userId, userId))
+//       .returning();
+
+//     return NextResponse.json({
+//       success: true,
+//       settings
+//     });
+//   } catch (error) {
+//     return NextResponse.json(
+//       { error: 'Failed to save settings' },
+//       { status: 500 }
+//     );
+//   }
+// }

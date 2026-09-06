@@ -24,6 +24,7 @@ export const posts = pgTable('posts', {
   hook: text('hook'),
   
   status: varchar('status', { length: 20 }).default('draft').notNull(),
+  publishedAt: timestamp('published_at'),
   editedByUser: boolean('edited_by_user').default(false),
   originalContent: text('original_content'),
   
@@ -33,6 +34,7 @@ export const posts = pgTable('posts', {
   impressions: integer('impressions').default(0),
   clicks: integer('clicks').default(0),
   engagementRate: real('engagement_rate').default(0),
+  analytics: jsonb('analytics').default({}),
   
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

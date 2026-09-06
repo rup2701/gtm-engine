@@ -224,3 +224,119 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+
+// Helper function to get the next week's date for a given day name
+// app/api/generate/route.ts
+
+// export async function POST(request: NextRequest) {
+//   const { userId, weekKey } = await request.json();
+
+//   // 1. Get or scrape the latest website content
+//   let websiteScrape = await db.query.websiteScrapes.findFirst({
+//     where: and(
+//       eq(websiteScrapes.userId, userId),
+//       eq(websiteScrapes.url, 'https://appnomics.com')
+//     ),
+//     orderBy: (scrapes, { desc }) => [desc(scrapes.scrapedAt)]
+//   });
+
+//   // 2. If no scrape exists OR it's > 7 days old → scrape fresh
+//   const isStale = !websiteScrape || 
+//     Date.now() - new Date(websiteScrape.scrapedAt).getTime() > 7 * 24 * 60 * 60 * 1000;
+
+//   if (isStale) {
+//     const freshContent = await scrapeWebsite('https://appnomics.com');
+//     const hash = crypto.createHash('sha256').update(freshContent).digest('hex');
+    
+//     websiteScrape = await db.insert(websiteScrapes).values({
+//       userId,
+//       url: 'https://appnomics.com',
+//       content: freshContent,
+//       hash,
+//       scrapedAt: new Date(),
+//     }).returning().then(rows => rows[0]);
+//   }
+
+//   // 3. Get uploaded docs for this user
+//   const userDocs = await db.query.knowledgeBase.findMany({
+//     where: eq(knowledgeBase.userId, userId)
+//   });
+
+//   // 4. Get user config (from settings)
+//   const userConfig = await getUserConfig(userId);
+
+//   // 5. Build the full context fingerprint
+//   const contextFingerprint = JSON.stringify({
+//     websiteHash: websiteScrape.hash,
+//     docHashes: userDocs.map(d => d.hash).sort(),
+//     userConfig,
+//     weekKey
+//   });
+
+//   const contextHash = crypto
+//     .createHash('sha256')
+//     .update(contextFingerprint)
+//     .digest('hex');
+
+//   // 6. Check cache
+//   const existingSnapshot = await db.query.contextSnapshots.findFirst({
+//     where: eq(contextSnapshots.hash, contextHash)
+//   });
+
+//   if (existingSnapshot) {
+//     // Return cached batch
+//     const cachedBatch = await db.query.batches.findFirst({
+//       where: eq(batches.contextSnapshotId, existingSnapshot.id)
+//     });
+    
+//     if (cachedBatch) {
+//       const cachedPosts = await db.query.posts.findMany({
+//         where: eq(posts.batchId, cachedBatch.id)
+//       });
+      
+//       return NextResponse.json({
+//         fromCache: true,
+//         batchId: cachedBatch.id,
+//         posts: cachedPosts
+//       });
+//     }
+//   }
+
+//   // 7. Build the full context string for the LLM
+//   const fullContext = buildContext({
+//     websiteContent: websiteScrape.content,
+//     creativeGrayContent: await loadSeedFile('creativegray_master.md'),
+//     userDocs: userDocs.map(d => d.content).join('\n\n'),
+//     userConfig,
+//   });
+
+//   // 8. Generate new content
+//   const generatedPosts = await callGemini(fullContext, userConfig);
+
+//   // 9. Store the context snapshot
+//   const contextSnapshot = await db.insert(contextSnapshots).values({
+//     userId,
+//     weekKey,
+//     hash: contextHash,
+//     websiteScrapeId: websiteScrape.id,
+//     knowledgeBaseIds: userDocs.map(d => d.id),
+//     userConfig,
+//     fullContextString: fullContext,
+//   }).returning().then(rows => rows[0]);
+
+//   // 10. Store the batch and posts (your existing logic)
+//   const batchId = uuidv4();
+//   await db.insert(batches).values({
+//     id: batchId,
+//     contextHash,
+//     contextSnapshotId: contextSnapshot.id,
+//     websiteScrapeId: websiteScrape.id,
+//     weekKey,
+//     postCount: generatedPosts.length,
+//     status: 'draft',
+//     fromCache: false,
+//   });
+
+//   // ... insert posts (your existing code)
+// }

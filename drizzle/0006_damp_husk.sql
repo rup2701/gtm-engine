@@ -1,0 +1,1 @@
+ALTER TABLE "posts" ADD COLUMN "analytics" jsonb DEFAULT '{}'::jsonb;
