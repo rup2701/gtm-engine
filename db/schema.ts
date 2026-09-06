@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, boolean, integer, real, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, boolean, integer, real, jsonb, json } from 'drizzle-orm/pg-core';
 
 export const batches = pgTable('batches', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -51,6 +51,16 @@ export const posts = pgTable('posts', {
 // export const weekIdx = index('week_idx')
 //   .on(posts.weekKey);
 
+
+// db/schema.ts
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: text('email').unique().notNull(),
+  name: text('name'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
 export const userConfig = pgTable('user_config', {
   id: uuid('id').defaultRandom().primaryKey(),
   websiteUrl: text('website_url'),
@@ -60,4 +70,30 @@ export const userConfig = pgTable('user_config', {
   categories: jsonb('categories').default(['design', 'engineering', 'ux', 'marketing', 'launch', 'build']),
   lastScrapedAt: timestamp('last_scraped_at'),
   contextHash: varchar('context_hash', { length: 64 }),
+});
+
+// db/schema.ts
+export const userSettings = pgTable('user_settings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull(),
+  
+  // Social tokens (encrypted)
+  twitterBearerToken: text('twitter_bearer_token'),
+  twitterAccessToken: text('twitter_access_token'),
+  twitterRefreshToken: text('twitter_refresh_token'),
+  linkedinAccessToken: text('linkedin_access_token'),
+  discordWebhookUrl: text('discord_webhook_url'),
+  
+  // Publishing rules
+  frequencyMin: integer('frequency_min').default(3),
+  frequencyMax: integer('frequency_max').default(5),
+  publishTimes: json('publish_times').default(['09:00', '13:00', '17:00']),
+  autoPublish: boolean('auto_publish').default(true),
+  
+  // User context
+  tone: text('tone').default('authoritative'),
+  icp: text('icp'),
+  
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface ChannelConfig {
   id: string;
@@ -8,6 +8,7 @@ interface ChannelConfig {
   type: string;
   connected: boolean;
   apiKeyPlaceholder: string;
+  apiKey?: string; // 👈 Add this
 }
 
 const INITIAL_CHANNELS: ChannelConfig[] = [
@@ -27,6 +28,40 @@ export default function SettingsPage() {
     );
   };
 
+  const handleTokenChange = (id: string, value: string) => {
+    setChannels(prev =>
+      prev.map(ch =>
+        ch.id === id ? { ...ch, apiKey: value } : ch
+      )
+    );
+  };
+  
+  const saveToken = async (id: string) => {
+    const channel = channels.find(ch => ch.id === id);
+    if (!channel) return;
+
+    setSaving(true);
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channelId: id,
+          token: channel.apiKey,
+        }),
+      });
+      
+      if (res.ok) {
+        setSuccessMessage(`${channel.name} token saved successfully.`);
+        setTimeout(() => setSuccessMessage(null), 3000);
+      }
+    } catch (error) {
+      console.error('Failed to save token:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSave = () => {
     setSaving(true);
     setSuccessMessage(null);
@@ -36,7 +71,20 @@ export default function SettingsPage() {
       setTimeout(() => setSuccessMessage(null), 3000);
     }, 600);
   };
-
+  
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        // Set connected state based on saved tokens
+        setChannels(prev => prev.map(ch => ({
+          ...ch,
+          connected: !!data[ch.id + 'Token'],
+          apiKey: data[ch.id + 'Token'] || '',
+        })));
+      });
+    }, []);
+    
   return (
     <main className="min-h-screen bg-[#f8fafc] p-6 font-sans text-gray-900">
       <div className="max-w-4xl mx-auto space-y-8">
@@ -85,12 +133,16 @@ export default function SettingsPage() {
                   <div className="flex gap-2 mt-2">
                     <input
                       type="password"
-                      readOnly
-                      value={channel.apiKeyPlaceholder}
-                      className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 font-mono text-xs text-gray-500 focus:outline-none"
+                      value={channel.apiKey}
+                      onChange={(e) => handleTokenChange(channel.id, e.target.value)}
+                      placeholder="Paste your API key / token"
+                      className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
-                    <button className="rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-700 transition-all hover:bg-gray-200">
-                      Update Key
+                    <button
+                      onClick={() => saveToken(channel.id)}
+                      className="rounded-lg bg-indigo-600 px-3 py-2 text-xs text-white transition-all hover:bg-indigo-700"
+                    >
+                      Save Key
                     </button>
                   </div>
                 )}
