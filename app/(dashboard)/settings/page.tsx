@@ -38,43 +38,43 @@ export default function SettingsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100 p-8 font-sans">
+    <main className="min-h-screen bg-[#f8fafc] p-6 font-sans text-gray-900">
       <div className="max-w-4xl mx-auto space-y-8">
         
         {/* Header */}
-        <div className="flex justify-between items-center border-b border-zinc-800 pb-6">
+        <div className="flex items-center justify-between border-b border-gray-200 pb-6">
           <div>
             <h1 className="text-xl font-semibold tracking-tight">Command Center Settings</h1>
-            <p className="text-sm text-zinc-400">Manage social API keys, publishing endpoints, and agent rules.</p>
+            <p className="text-sm text-gray-500">Manage social API keys, publishing endpoints, and agent rules.</p>
           </div>
           {successMessage && (
-            <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-md">
+            <span className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs text-emerald-700">
               {successMessage}
             </span>
           )}
         </div>
 
         {/* Social Channels Section */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 space-y-6">
+        <div className="space-y-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <div>
-            <h2 className="text-sm font-semibold text-zinc-200">Connected Channels</h2>
-            <p className="text-xs text-zinc-400 mt-1">Configure where the publishing agent broadcasts your daily queue.</p>
+            <h2 className="text-sm font-semibold text-gray-900">Connected Channels</h2>
+            <p className="mt-1 text-xs text-gray-500">Configure where the publishing agent broadcasts your daily queue.</p>
           </div>
 
           <div className="space-y-4">
             {channels.map(channel => (
-              <div key={channel.id} className="bg-zinc-950 border border-zinc-800 p-4 rounded-lg flex flex-col gap-3">
-                <div className="flex justify-between items-center">
+              <div key={channel.id} className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-[#f8fafc] p-4">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className={`w-2.5 h-2.5 rounded-full ${channel.connected ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-600'}`} />
-                    <span className="text-sm font-medium text-zinc-200">{channel.name}</span>
+                    <span className={`h-2.5 w-2.5 rounded-full ${channel.connected ? 'animate-pulse bg-emerald-500' : 'bg-gray-400'}`} />
+                    <span className="text-sm font-medium text-gray-800">{channel.name}</span>
                   </div>
                   <button
                     onClick={() => toggleConnection(channel.id)}
                     className={`text-xs font-medium px-3 py-1 rounded transition-all cursor-pointer ${
                       channel.connected 
-                        ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' 
-                        : 'bg-zinc-100 text-zinc-950 hover:bg-white'
+                        ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        : 'bg-indigo-600 text-white hover:bg-indigo-700'
                     }`}
                   >
                     {channel.connected ? 'Disconnect' : 'Connect Channel'}
@@ -87,9 +87,9 @@ export default function SettingsPage() {
                       type="password"
                       readOnly
                       value={channel.apiKeyPlaceholder}
-                      className="bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs px-3 py-2 rounded flex-1 font-mono focus:outline-none"
+                      className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 font-mono text-xs text-gray-500 focus:outline-none"
                     />
-                    <button className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs px-3 py-2 rounded transition-all">
+                    <button className="rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-700 transition-all hover:bg-gray-200">
                       Update Key
                     </button>
                   </div>
@@ -100,20 +100,20 @@ export default function SettingsPage() {
         </div>
 
         {/* Agent Global Rules Section */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-zinc-200">Publishing Agent Rules</h2>
+        <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="text-sm font-semibold text-gray-900">Publishing Agent Rules</h2>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400">Daily Frequency Cadence</label>
-              <select className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs p-2.5 rounded">
+              <label className="text-xs text-gray-500">Daily Frequency Cadence</label>
+              <select className="w-full rounded-lg border border-gray-200 bg-white p-2.5 text-xs text-gray-800">
                 <option>3 to 5 posts per day</option>
                 <option>High frequency (5 to 8 posts/day)</option>
                 <option>Conservative (1 to 2 posts/day)</option>
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400">Auto-Publish Mode</label>
-              <select className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs p-2.5 rounded">
+              <label className="text-xs text-gray-500">Auto-Publish Mode</label>
+              <select className="w-full rounded-lg border border-gray-200 bg-white p-2.5 text-xs text-gray-800">
                 <option>Fully Automated (Cron Agent Active)</option>
                 <option>Manual Review Required (Pause before dispatch)</option>
               </select>
@@ -126,7 +126,7 @@ export default function SettingsPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="bg-zinc-100 hover:bg-white text-zinc-950 text-sm font-medium px-5 py-2.5 rounded-md transition-all cursor-pointer disabled:opacity-50"
+            className="cursor-pointer rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-indigo-700 disabled:opacity-50"
           >
             {saving ? 'Saving changes...' : 'Save Configuration'}
           </button>

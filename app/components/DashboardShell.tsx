@@ -16,7 +16,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-zinc-950">
-      <header className="flex h-16 items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 text-zinc-100 md:px-6">
+      <header className="flex h-16 items-center justify-between border-b border-zinc-200 bg-white px-4 text-zinc-950 md:px-6">
         <Link href="/generate" className="flex items-center gap-3" aria-label="dispatchOS home">
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-400 text-zinc-950 shadow-[0_0_24px_rgba(52,211,153,0.2)]">
             <Zap className="h-5 w-5" strokeWidth={2.5} />
@@ -24,7 +24,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
           <span className="text-lg font-semibold tracking-tight">dispatchOS</span>
         </Link>
 
-        <div className="hidden items-center gap-2 text-xs text-zinc-400 sm:flex">
+        <div className="hidden items-center gap-2 text-xs text-zinc-500 sm:flex">
           <span className="h-2 w-2 rounded-full bg-emerald-400" />
           Distribution engine online
         </div>
@@ -38,7 +38,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                 href={href}
                 aria-label={label}
                 className={`rounded-md p-2 transition-colors ${
-                  isActive ? 'bg-zinc-800 text-emerald-300' : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100'
+                  isActive ? 'bg-emerald-50 text-emerald-700' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-950'
                 }`}
               >
                 <Icon className="h-4 w-4" />
