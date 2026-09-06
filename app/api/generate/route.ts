@@ -10,7 +10,7 @@ import crypto from 'crypto';
 
 import { getNextWeekDate, getWeekIdentifier } from '@/lib/date-utils';
 import { eq, and } from 'drizzle-orm';
-import { index } from 'drizzle-orm/pg-core/indexes';
+
 
 // Type-safe category enforcement matching your prompt requirements
 const VALID_CATEGORIES = ['design', 'engineering', 'ux', 'marketing', 'launch', 'build'] as const;

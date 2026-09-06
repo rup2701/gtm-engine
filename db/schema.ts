@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, boolean, integer, real, index, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, boolean, integer, real, jsonb } from 'drizzle-orm/pg-core';
 
 export const batches = pgTable('batches', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -20,6 +20,7 @@ export const posts = pgTable('posts', {
   platform: varchar('platform', { length: 20 }).notNull(),
   category: varchar('category', { length: 20 }).notNull(),
   content: text('content').notNull(),
+  editedContent: text('edited_content'),
   hook: text('hook'),
   
   status: varchar('status', { length: 20 }).default('draft').notNull(),
