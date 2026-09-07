@@ -14,14 +14,21 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      settings: settings || null,
+      settings: settings
+        ? {
+            id: settings.id,
+            userId: settings.userId,
+            frequencyMin: settings.frequencyMin,
+            frequencyMax: settings.frequencyMax,
+            publishTimes: settings.publishTimes,
+            autoPublish: settings.autoPublish,
+            tone: settings.tone,
+            icp: settings.icp,
+          }
+        : null,
       twitterConnected: !!settings?.twitterBearerToken,
       linkedinConnected: !!settings?.linkedinAccessToken,
       discordConnected: !!settings?.discordWebhookUrl,
-      // Return existing values so UI can populate them
-      twitterBearerToken: settings?.twitterBearerToken || '',
-      linkedinAccessToken: settings?.linkedinAccessToken || '',
-      discordWebhookUrl: settings?.discordWebhookUrl || '',
     });
 
   } catch (error) {
@@ -45,7 +52,7 @@ export async function PUT(request: NextRequest) {
     const { channelId, token } = body;
 
     // Map channelId to DB column
-    const updateData: any = {};
+    const updateData: Partial<typeof userSettings.$inferInsert> = {};
     if (channelId === 'x') updateData.twitterBearerToken = token;
     if (channelId === 'linkedin') updateData.linkedinAccessToken = token;
     if (channelId === 'discord') updateData.discordWebhookUrl = token;
