@@ -4,7 +4,8 @@ import { db } from '@/db';
 import { posts, userSettings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { MY_USER_ID } from '@/lib/constants';
-import { publishToLinkedIn } from '@/lib/publishers/linkedin';
+import { publishToLinkedIn,  } from '@/lib/publishers/linkedin';
+import { publishToTwitter } from '@/lib/publishers/twitter';
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,17 +39,26 @@ export async function POST(request: NextRequest) {
     console.log(`Publishing post ${postId} to ${platform}...`);
     switch (post.platform) {
       case 'twitter':
-        // if (!settings.twitterOauth2Token) {
-        //   throw new Error('Twitter token not configured');
-        // }
-        // result = await publishToTwitter(content, settings.twitterOauth2Token);
+        if (!settings.twitterAccessToken) {
+          throw new Error('Twitter token not configured');
+        }
+        result = await publishToTwitter(content, settings.twitterAccessToken);
         break;
 
       case 'linkedin':
         if (!settings.linkedinAccessToken) {
           throw new Error('LinkedIn token not configured');
         }
-        result = await publishToLinkedIn(content, process.env.LINKEDIN_ACCESS_TOKEN || settings.linkedinAccessToken);
+        result = await publishToLinkedIn(
+          content,
+          settings.linkedinAccessToken,
+          settings.linkedinPersonId || undefined,
+        );
+        if (!settings.linkedinPersonId && result.analytics?.linkedinPersonId) {
+          await db.update(userSettings)
+            .set({ linkedinPersonId: result.analytics.linkedinPersonId })
+            .where(eq(userSettings.userId, MY_USER_ID));
+        }
         console.log('LinkedIn publish result:', result);
         break;
 

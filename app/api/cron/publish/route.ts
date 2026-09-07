@@ -49,7 +49,17 @@ export async function POST() {
           if (!settings.linkedinAccessToken) {
             throw new Error('LinkedIn is not configured');
           }
-          await publishToLinkedIn(content, settings.linkedinAccessToken);
+          const result = await publishToLinkedIn(
+            content,
+            settings.linkedinAccessToken,
+            settings.linkedinPersonId || undefined,
+          );
+          if (!settings.linkedinPersonId && result.analytics?.linkedinPersonId) {
+            await db.update(userSettings)
+              .set({ linkedinPersonId: result.analytics.linkedinPersonId })
+              .where(eq(userSettings.userId, MY_USER_ID));
+            settings.linkedinPersonId = result.analytics.linkedinPersonId;
+          }
           break;
         case 'reddit':
           if (!settings.redditAccessToken || !settings.redditSubreddits?.length) {

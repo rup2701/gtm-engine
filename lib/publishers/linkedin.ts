@@ -2,23 +2,32 @@ interface LinkedInUserInfo {
   sub?: string;
 }
 
-export async function publishToLinkedIn(content: string, accessToken: string) {
-  const profileResponse = await fetch('https://api.linkedin.com/v2/userinfo', {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'LinkedIn-Version': '202601',
-      'X-Restli-Protocol-Version': '2.0.0',
-    },
-  });
+export async function publishToLinkedIn(
+  content: string,
+  accessToken: string,
+  personId?: string,
+) {
+  let resolvedPersonId = personId;
 
-  if (!profileResponse.ok) {
-    const error = await profileResponse.text();
-    throw new Error(`LinkedIn profile API error: ${error}`);
-  }
+  if (!resolvedPersonId) {
+    const profileResponse = await fetch('https://api.linkedin.com/v2/userinfo', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'LinkedIn-Version': '202601',
+        'X-Restli-Protocol-Version': '2.0.0',
+      },
+    });
 
-  const profile = (await profileResponse.json()) as LinkedInUserInfo;
-  if (!profile.sub) {
-    throw new Error('LinkedIn profile API error: missing member ID');
+    if (!profileResponse.ok) {
+      const error = await profileResponse.text();
+      throw new Error(`LinkedIn profile API error: ${error}`);
+    }
+
+    const profile = (await profileResponse.json()) as LinkedInUserInfo;
+    if (!profile.sub) {
+      throw new Error('LinkedIn profile API error: missing member ID');
+    }
+    resolvedPersonId = profile.sub;
   }
 
   const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
@@ -30,7 +39,7 @@ export async function publishToLinkedIn(content: string, accessToken: string) {
       'X-Restli-Protocol-Version': '2.0.0',
     },
     body: JSON.stringify({
-      author: `urn:li:person:${profile.sub}`,
+      author: `urn:li:person:${resolvedPersonId}`,
       lifecycleState: 'PUBLISHED',
       specificContent: {
         'com.linkedin.ugc.ShareContent': {
@@ -53,6 +62,6 @@ export async function publishToLinkedIn(content: string, accessToken: string) {
   return {
     success: true,
     url: `https://linkedin.com/feed/update/${data.id}`,
-    analytics: { postId: data.id },
+    analytics: { postId: data.id, linkedinPersonId: resolvedPersonId },
   };
 }

@@ -57,6 +57,13 @@
       "when": 1788788626059,
       "tag": "0007_add_reddit_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788808747832,
+      "tag": "0008_cache_linkedin_person_id",
+      "breakpoints": true
     }
   ]
 }
