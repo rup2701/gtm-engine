@@ -91,3 +91,5 @@ export async function POST() {
   return NextResponse.json({ results });
 }
 
+export const GET = POST;
+
