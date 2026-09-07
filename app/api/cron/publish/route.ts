@@ -6,6 +6,7 @@ import { eq, and, lte, isNull } from 'drizzle-orm';
 import { MY_USER_ID } from '@/lib/constants';
 import { publishToTwitter } from '@/lib/publishers/twitter';
 import { publishToLinkedIn } from '@/lib/publishers/linkedin';
+import { publishToReddit } from '@/lib/publishers/reddit';
 
 export async function POST() {
   const now = new Date();
@@ -51,7 +52,15 @@ export async function POST() {
           await publishToLinkedIn(content, settings.linkedinAccessToken);
           break;
         case 'reddit':
-          throw new Error('Reddit publishing is not configured');
+          if (!settings.redditAccessToken || !settings.redditSubreddits?.length) {
+            throw new Error('Reddit is not configured');
+          }
+          await publishToReddit(content, {
+            accessToken: settings.redditAccessToken,
+            subreddit: settings.redditSubreddits[0],
+            userAgent: process.env.REDDIT_USER_AGENT,
+          });
+          break;
         default:
           throw new Error(`Unsupported platform: ${post.platform}`);
       }

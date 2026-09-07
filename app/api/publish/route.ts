@@ -1,34 +1,86 @@
 // app/api/publish/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { publishToTwitter } from '@/lib/publishers/twitter';
 import { db } from '@/db';
+import { posts, userSettings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { posts } from '@/db/schema';
+import { MY_USER_ID } from '@/lib/constants';
+import { publishToLinkedIn } from '@/lib/publishers/linkedin';
 
 export async function POST(request: NextRequest) {
-  const { postId } = await request.json();
+  try {
+    const { postId } = await request.json();
 
-  // Find post
-  const [post] = await db.query.posts.findMany({
-    where: eq(posts.id, postId),
-  });
+    if (!postId) {
+      return NextResponse.json({ error: 'postId required' }, { status: 400 });
+    }
 
-  if (!post) {
-    return NextResponse.json({ error: 'Post not found' }, { status: 404 });
+    // 1. Get the post
+    const [post] = await db.select().from(posts).where(eq(posts.id, postId));
+    if (!post) {
+      return NextResponse.json({ error: 'Post not found' }, { status: 404 });
+    }
+
+    // 2. Get user settings (tokens)
+    const [settings] = await db.select()
+      .from(userSettings)
+      .where(eq(userSettings.userId, MY_USER_ID));
+
+    if (!settings) {
+      return NextResponse.json({ error: 'No settings found' }, { status: 500 });
+    }
+
+    // 3. Get the content (use edited version if available)
+    const content = post.editedContent || post.content;
+
+    // 4. Publish to the right platform
+    let result;
+    const platform = post.platform.toLowerCase();
+    console.log(`Publishing post ${postId} to ${platform}...`);
+    switch (post.platform) {
+      case 'twitter':
+        // if (!settings.twitterOauth2Token) {
+        //   throw new Error('Twitter token not configured');
+        // }
+        // result = await publishToTwitter(content, settings.twitterOauth2Token);
+        break;
+
+      case 'linkedin':
+        if (!settings.linkedinAccessToken) {
+          throw new Error('LinkedIn token not configured');
+        }
+        result = await publishToLinkedIn(content, process.env.LINKEDIN_ACCESS_TOKEN || settings.linkedinAccessToken);
+        console.log('LinkedIn publish result:', result);
+        break;
+
+      case 'reddit':
+        // throw new Error('Reddit publishing not implemented yet');
+
+      default:
+        throw new Error(`Unknown platform: ${post.platform}`);
+    }
+
+    // 5. Update post status
+    await db.update(posts)
+      .set({
+        status: 'published',
+        publishedAt: new Date(),
+        // analytics: result.analytics || {},
+        updatedAt: new Date(),
+      })
+      .where(eq(posts.id, postId));
+
+    return NextResponse.json({
+      success: true,
+      postId: post.id,
+      platform: post.platform,
+      // url: result.url,
+    });
+
+  } catch (error) {
+    console.error('Publish error:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to publish' },
+      { status: 500 }
+    );
   }
-
-  // Publish immediately
-  const content = post.editedContent || post.content;
-  const result = await publishToTwitter(content, process.env.TWITTER_API_KEY!);
-
-  // Update DB
-  await db.update(posts)
-    .set({
-      status: 'published',
-      publishedAt: new Date(),
-      analytics: result.analytics || {},
-    })
-    .where(eq(posts.id, postId));
-
-  return NextResponse.json({ success: true, url: result.url });
 }

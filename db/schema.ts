@@ -84,6 +84,8 @@ export const userSettings = pgTable('user_settings', {
   twitterAccessToken: text('twitter_access_token'),
   twitterRefreshToken: text('twitter_refresh_token'),
   linkedinAccessToken: text('linkedin_access_token'),
+  redditAccessToken: text('reddit_access_token'),
+  redditSubreddits: jsonb('reddit_subreddits').$type<string[]>().default([]),
   discordWebhookUrl: text('discord_webhook_url'),
   
   // Publishing rules
