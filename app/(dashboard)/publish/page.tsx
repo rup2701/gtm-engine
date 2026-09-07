@@ -525,12 +525,14 @@ export default function StagingPage() {
                                 >
                                   ❌ Drop
                                 </button>
-                                <button
-                                  onClick={() => handleFireNow(post.id)}
-                                  className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition"
-                                >
-                                  <Send className="w-3 h-3 inline" /> Fire Now
-                                </button>
+                                {new Date(post.scheduledAt) <= new Date() && (
+                                  <button
+                                    onClick={() => handleFireNow(post.id)}
+                                    className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition"
+                                  >
+                                    <Send className="w-3 h-3 inline" /> Fire Now
+                                  </button>
+                                )}
                               </>
                             )}
 
