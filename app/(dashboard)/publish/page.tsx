@@ -418,6 +418,7 @@ export default function StagingPage() {
                         displayContent.length > 60
                           ? displayContent.slice(0, 60) + '...'
                           : displayContent;
+                      const isManualPlatform = post.platform === 'reddit';
 
                       return (
                         <div
@@ -429,6 +430,8 @@ export default function StagingPage() {
                               ? 'opacity-50 bg-gray-50'
                               : post.status === 'published'
                               ? 'bg-blue-50 border-blue-200'
+                              : isManualPlatform
+                              ? 'bg-amber-50 border-amber-200 hover:shadow-md'
                               : 'bg-white hover:shadow-md'
                           }`}
                         >
@@ -467,6 +470,11 @@ export default function StagingPage() {
                                   {PLATFORM_ICONS[post.platform]}{' '}
                                   {PLATFORM_LABELS[post.platform]}
                                 </span>
+                                {isManualPlatform && (
+                                  <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded">
+                                    Manual action
+                                  </span>
+                                )}
                                 <span className="text-gray-400">•</span>
                                 <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
                                   {post.category}
@@ -525,7 +533,7 @@ export default function StagingPage() {
                                 >
                                   ❌ Drop
                                 </button>
-                                {new Date(post.scheduledAt) <= new Date() && (
+                                {!isManualPlatform && new Date(post.scheduledAt) <= new Date() && (
                                   <button
                                     onClick={() => handleFireNow(post.id)}
                                     className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition"

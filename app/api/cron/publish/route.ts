@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { posts, userSettings } from '@/db/schema';
-import { eq, and, lte, isNull } from 'drizzle-orm';
+import { eq, and, lte, isNull, ne } from 'drizzle-orm';
 import { MY_USER_ID } from '@/lib/constants';
 import { publishToTwitter } from '@/lib/publishers/twitter';
 import { publishToLinkedIn } from '@/lib/publishers/linkedin';
@@ -27,7 +27,8 @@ export async function POST() {
       and(
         eq(posts.status, 'queued'),
         lte(posts.scheduledAt, now),
-        isNull(posts.publishedAt)
+        isNull(posts.publishedAt),
+        ne(posts.platform, 'reddit')
       )
     )
     .limit(5);
