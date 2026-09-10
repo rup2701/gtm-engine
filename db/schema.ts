@@ -54,13 +54,36 @@ export const posts = pgTable('posts', {
 //   .on(posts.weekKey);
 
 
+export const organizations = pgTable('organizations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name', { length: 100 }).notNull(),
+  slug: varchar('slug', { length: 100 }).notNull().unique(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const subscriptions = pgTable('subscriptions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .references(() => organizations.id)
+    .notNull(),
+  tier: varchar('tier', { length: 20 }).notNull(), // starter, pro, agency
+  productLimit: integer('product_limit').notNull(), // 1, 3, 999
+  ragLimit: integer('rag_limit').notNull(), // 1, 10, 999
+  status: varchar('status', { length: 20 }).default('active').notNull(), // active, canceled, expired
+  stripeId: varchar('stripe_id', { length: 255 }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // db/schema.ts
 export const users = pgTable('users', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  email: text('email').unique().notNull(),
-  name: text('name'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  id: uuid('id').defaultRandom().primaryKey(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  passwordHash: text('password_hash'),
+  name: varchar('name', { length: 100 }),
+  organizationId: uuid('organization_id').references(() => organizations.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 export const userConfig = pgTable('user_config', {

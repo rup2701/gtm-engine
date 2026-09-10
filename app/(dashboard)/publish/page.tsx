@@ -250,7 +250,7 @@ export default function StagingPage() {
         <div className="text-red-600">{fetchError}</div>
         <button
           onClick={() => fetchWeekData(weekOffset)}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+          className="rounded-lg bg-[var(--brand)] px-4 py-2 text-white hover:bg-[var(--brand-hover)]"
         >
           Try again
         </button>
@@ -315,7 +315,7 @@ export default function StagingPage() {
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
               isPastWeek(weekOffset)
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                : 'bg-black text-white hover:bg-gray-900'
             }`}
           >
             <RefreshCw className="w-4 h-4" />
@@ -328,7 +328,7 @@ export default function StagingPage() {
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm ${
               isPastWeek(weekOffset)
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-gray-600 text-white hover:bg-gray-700'
+                : 'bg-black text-white hover:bg-gray-900'
             }`}
           >
             <RefreshCw className="w-4 h-4" />
@@ -341,7 +341,7 @@ export default function StagingPage() {
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
               isPastWeek(weekOffset) || !hasPosts
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                : 'bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]'
             }`}
           >
             ✅ Queue All
@@ -366,7 +366,7 @@ export default function StagingPage() {
             {!isPastWeek(weekOffset) && (
               <button
                 onClick={() => handleRegenerate(false)}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                className="px-6 py-2 bg-[var(--brand)] text-white rounded-lg hover:bg-[var(--brand-hover)] transition"
               >
                 <RefreshCw className="w-4 h-4 inline mr-2" />
                 Generate Posts
@@ -391,13 +391,13 @@ export default function StagingPage() {
                 {/* Day header */}
                 <div
                   className={`rounded-t-xl px-4 py-3 border-b ${
-                    isToday(dayDate) ? 'bg-indigo-50' : 'bg-gray-50'
+                    isToday(dayDate) ? 'bg-[var(--brand-soft)] border-[var(--brand)]' : 'bg-gray-50'
                   }`}
                 >
                   <div className="font-semibold text-gray-900">{day}</div>
                   <div
                     className={`text-sm ${
-                      isToday(dayDate) ? 'text-indigo-600' : 'text-gray-500'
+                      isToday(dayDate) ? 'font-black tracking-tight text-[var(--brand-hover)]' : 'text-gray-500'
                     }`}
                   >
                     {dayDate.toLocaleDateString('en-US', {
@@ -429,7 +429,7 @@ export default function StagingPage() {
                             post.status === 'dropped'
                               ? 'opacity-50 bg-gray-50'
                               : post.status === 'published'
-                              ? 'bg-blue-50 border-blue-200'
+                              ? 'bg-[var(--brand-soft)] border-[var(--brand)]'
                               : isManualPlatform
                               ? 'bg-amber-50 border-amber-200 hover:shadow-md'
                               : 'bg-white hover:shadow-md'
@@ -503,7 +503,7 @@ export default function StagingPage() {
                               <>
                                 <button
                                   onClick={() => updatePostStatus(post.id, 'queued')}
-                                  className="text-xs px-2 py-1 bg-emerald-50 text-emerald-700 rounded hover:bg-emerald-100 transition"
+                                  className="text-xs px-2 py-1 bg-[var(--brand-tint)] text-[var(--brand-hover)] rounded hover:bg-[var(--brand-tint-hover)] transition"
                                 >
                                   ✅ Queue
                                 </button>
@@ -518,7 +518,7 @@ export default function StagingPage() {
 
                             {post.status === 'queued' && (
                               <>
-                                <span className="text-xs px-2 py-1 bg-emerald-50 text-emerald-700 rounded">
+                                <span className="text-xs px-2 py-1 bg-[var(--brand-tint)] text-[var(--brand-hover)] rounded">
                                   ✅ Queued
                                 </span>
                                 <button
@@ -536,7 +536,7 @@ export default function StagingPage() {
                                 {!isManualPlatform && new Date(post.scheduledAt) <= new Date() && (
                                   <button
                                     onClick={() => handleFireNow(post.id)}
-                                    className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition"
+                                    className="text-xs px-2 py-1 bg-[var(--brand-soft)] text-[var(--brand-hover)] rounded hover:bg-[var(--brand-tint-hover)] transition"
                                   >
                                     <Send className="w-3 h-3 inline" /> Fire Now
                                   </button>
@@ -548,7 +548,7 @@ export default function StagingPage() {
                               <>
                                 <button
                                   onClick={() => updatePostStatus(post.id, 'queued')}
-                                  className="text-xs px-2 py-1 bg-emerald-50 text-emerald-700 rounded hover:bg-emerald-100 transition"
+                                  className="text-xs px-2 py-1 bg-[var(--brand-tint)] text-[var(--brand-hover)] rounded hover:bg-[var(--brand-tint-hover)] transition"
                                 >
                                   ✅ Queue
                                 </button>
@@ -562,7 +562,7 @@ export default function StagingPage() {
                             )}
 
                             {post.status === 'published' && (
-                              <span className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded">
+                              <span className="text-xs px-2 py-1 bg-[var(--brand-soft)] text-[var(--brand-hover)] rounded">
                                 📤 Published
                               </span>
                             )}
@@ -601,10 +601,10 @@ export default function StagingPage() {
               <span className="font-medium text-gray-700">
                 📊 {weekData.total} posts total
               </span>
-              <span className="text-emerald-600">✅ {weekData.stats.queued} queued</span>
+              <span className="text-[var(--brand)]">✅ {weekData.stats.queued} queued</span>
               <span className="text-amber-600">⏸ {weekData.stats.hold} on hold</span>
               <span className="text-red-600">❌ {weekData.stats.dropped} dropped</span>
-              <span className="text-blue-600">📤 {weekData.stats.published} published</span>
+              <span className="text-[var(--brand-hover)]">📤 {weekData.stats.published} published</span>
             </div>
             <div className="text-gray-400 text-xs">
               {weekData.posts.some((p) => p.editedContent) && (
@@ -641,7 +641,7 @@ export default function StagingPage() {
               <textarea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
-                className="w-full h-48 p-3 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full h-48 p-3 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]"
               />
             </div>
             <div className="flex items-center justify-end gap-3">
@@ -656,7 +656,7 @@ export default function StagingPage() {
               </button>
               <button
                 onClick={() => updatePostContent(selectedPost.id, editContent)}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                className="px-4 py-2 bg-[var(--brand)] text-white rounded-lg hover:bg-[var(--brand-hover)] transition"
               >
                 Save Changes
               </button>
