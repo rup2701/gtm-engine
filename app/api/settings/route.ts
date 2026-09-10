@@ -3,14 +3,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { userSettings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { MY_USER_ID } from '@/lib/constants';
+import { getCurrentUserId } from '@/lib/auth';
 
 export async function GET() {
   try {
-    // Hardcoded for MVP — you're the only user
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const [settings] = await db.select()
       .from(userSettings)
-      .where(eq(userSettings.userId, MY_USER_ID));
+      .where(eq(userSettings.userId, userId));
 
     return NextResponse.json({
       success: true,
@@ -48,6 +52,11 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { channelId, token } = body;
 
@@ -60,15 +69,15 @@ export async function PUT(request: NextRequest) {
     // Update or insert
     const [existing] = await db.select()
       .from(userSettings)
-      .where(eq(userSettings.userId, MY_USER_ID));
+      .where(eq(userSettings.userId, userId));
 
     if (existing) {
       await db.update(userSettings)
         .set(updateData)
-        .where(eq(userSettings.userId, MY_USER_ID));
+        .where(eq(userSettings.userId, userId));
     } else {
       await db.insert(userSettings).values({
-        userId: MY_USER_ID,
+        userId,
         ...updateData,
       });
     }

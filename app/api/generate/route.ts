@@ -10,6 +10,7 @@ import crypto from 'crypto';
 
 import { getNextWeekDate, getWeekIdentifier } from '@/lib/date-utils';
 import { eq, and } from 'drizzle-orm';
+import { getCurrentUserId } from '@/lib/auth';
 
 
 // Type-safe category enforcement matching your prompt requirements
@@ -35,6 +36,11 @@ async function loadContextFile(filename: string): Promise<string> {
 
 export async function POST(request: NextRequest) {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     // Optional: Allow overriding weeks/days via request body in the future
     // For now, defaults to the 5-day / 3-5 posts per day spec
     const body = await request.json().catch(() => ({}));

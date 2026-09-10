@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { userSettings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { MY_USER_ID } from '@/lib/constants';
+import { getCurrentUserId } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
+  const userId = await getCurrentUserId();
   const code = request.nextUrl.searchParams.get('code');
   const oauthError = request.nextUrl.searchParams.get('error');
   const settingsUrl = new URL('/settings', request.url);
@@ -12,6 +13,10 @@ export async function GET(request: NextRequest) {
   if (oauthError || !code) {
     settingsUrl.searchParams.set('twitter', 'error');
     return NextResponse.redirect(settingsUrl);
+  }
+
+  if (!userId) {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   const clientId = process.env.TWITTER_CLIENT_ID;
@@ -46,7 +51,7 @@ export async function GET(request: NextRequest) {
 
     const [existingSettings] = await db.select()
       .from(userSettings)
-      .where(eq(userSettings.userId, MY_USER_ID));
+      .where(eq(userSettings.userId, userId));
 
     if (existingSettings) {
       await db.update(userSettings)
@@ -55,10 +60,10 @@ export async function GET(request: NextRequest) {
           twitterAccessToken: data.access_token,
           updatedAt: new Date(),
         })
-        .where(eq(userSettings.userId, MY_USER_ID));
+        .where(eq(userSettings.userId, userId));
     } else {
       await db.insert(userSettings).values({
-        userId: MY_USER_ID,
+        userId,
         twitterBearerToken: data.access_token,
         twitterAccessToken: data.access_token,
       });

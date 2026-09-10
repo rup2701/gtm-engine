@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CalendarDays, Settings, Sparkles, Zap } from 'lucide-react';
+import { CalendarDays, LogOut, Settings, Sparkles, Zap } from 'lucide-react';
+import { signOut } from 'next-auth/react';
 import type { ReactNode } from 'react';
 
 const navigation = [
@@ -45,6 +46,14 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
+          <button
+            type="button"
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="rounded-md p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-950"
+            aria-label="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
         </nav>
       </header>
 
@@ -72,6 +81,15 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
               );
             })}
           </nav>
+
+          <button
+            type="button"
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="mt-6 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-950"
+          >
+            <LogOut className="h-4 w-4 text-zinc-400" />
+            Sign out
+          </button>
 
           <div className="mt-auto border-t border-zinc-100 pt-5 text-xs text-zinc-400">
             <p className="px-3">dispatchOS</p>

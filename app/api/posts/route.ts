@@ -3,8 +3,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { posts } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { getCurrentUserId } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
+  const userId = await getCurrentUserId();
+  console.log('Fetching posts for userId:', userId);
+  
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const searchParams = request.nextUrl.searchParams;
   const weekKey = searchParams.get('weekKey'); // "2026-W36"
   const batchId = searchParams.get('batchId');

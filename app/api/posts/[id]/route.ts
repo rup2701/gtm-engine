@@ -3,12 +3,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { posts } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { getCurrentUserId } from '@/lib/auth';
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { id } = await params;
     const { status, editedContent, scheduledAt } = body;

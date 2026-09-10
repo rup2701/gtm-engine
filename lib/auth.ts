@@ -2,7 +2,7 @@ import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { db } from '@/db';
-import { users, organizations, subscriptions } from '@/db/schema';
+import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -49,3 +49,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: '/login',
   },
 });
+
+export async function getCurrentUserId() {
+  const session = await auth();
+  return session?.user?.id ?? null;
+}

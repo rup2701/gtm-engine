@@ -3,18 +3,25 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { posts, userSettings } from '@/db/schema';
 import { eq, and, lte, isNull, ne } from 'drizzle-orm';
-import { MY_USER_ID } from '@/lib/constants';
 import { publishToTwitter } from '@/lib/publishers/twitter';
 import { publishToLinkedIn } from '@/lib/publishers/linkedin';
 import { publishToReddit } from '@/lib/publishers/reddit';
 
-export async function POST() {
+export async function POST(request: Request) {
+  const cronSecret = process.env.CRON_SECRET;
+  const authorization = request.headers.get('authorization');
+  const userId = process.env.CRON_USER_ID;
+
+  if (!cronSecret || authorization !== `Bearer ${cronSecret}` || !userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const now = new Date();
   
   // 1. Get your settings (tokens)
   const [settings] = await db.select()
     .from(userSettings)
-    .where(eq(userSettings.userId, MY_USER_ID));
+    .where(eq(userSettings.userId, userId));
 
   if (!settings) {
     return NextResponse.json({ error: 'No settings found' }, { status: 500 });
@@ -58,7 +65,7 @@ export async function POST() {
           if (!settings.linkedinPersonId && result.analytics?.linkedinPersonId) {
             await db.update(userSettings)
               .set({ linkedinPersonId: result.analytics.linkedinPersonId })
-              .where(eq(userSettings.userId, MY_USER_ID));
+              .where(eq(userSettings.userId, userId));
             settings.linkedinPersonId = result.analytics.linkedinPersonId;
           }
           break;
@@ -92,5 +99,7 @@ export async function POST() {
   return NextResponse.json({ results });
 }
 
-export const GET = POST;
+export async function GET(request: Request) {
+  return POST(request);
+}
 
