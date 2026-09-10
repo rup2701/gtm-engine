@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { posts } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { getCurrentUserId } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -26,8 +26,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const whereClause = batchId
-      ? eq(posts.batchId, batchId)
-      : eq(posts.weekKey, weekKey as string);
+      ? and(eq(posts.batchId, batchId), eq(posts.userId, userId))
+      : and(eq(posts.weekKey, weekKey as string), eq(posts.userId, userId));
 
     const results = await db.query.posts.findMany({
       where: whereClause,

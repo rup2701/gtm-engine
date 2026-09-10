@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { posts } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { getCurrentUserId } from '@/lib/auth';
 
 export async function PATCH(
@@ -29,7 +29,7 @@ export async function PATCH(
 
     const [updated] = await db.update(posts)
       .set(updateData)
-      .where(eq(posts.id, id))
+      .where(and(eq(posts.id, id), eq(posts.userId, userId)))
       .returning();
 
     return NextResponse.json({

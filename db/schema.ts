@@ -2,6 +2,7 @@ import { pgTable, uuid, varchar, text, timestamp, boolean, integer, real, jsonb,
 
 export const batches = pgTable('batches', {
   id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id).notNull(),
   contextHash: varchar('context_hash', { length: 64 }).notNull(),
   weekKey: varchar('week_key', { length: 10 }), // ✅ added
   generatedAt: timestamp('generated_at').defaultNow().notNull(),
@@ -12,6 +13,7 @@ export const batches = pgTable('batches', {
 // 1. Define the table
 export const posts = pgTable('posts', {
   id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id).notNull(),
   batchId: uuid('batch_id').references(() => batches.id).notNull(),
   
   scheduledAt: timestamp('scheduled_at').notNull(),

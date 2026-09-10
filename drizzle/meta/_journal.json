@@ -71,6 +71,13 @@
       "when": 1789059844022,
       "tag": "0009_concerned_cannonball",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789061711135,
+      "tag": "0010_add_content_ownership",
+      "breakpoints": true
     }
   ]
 }

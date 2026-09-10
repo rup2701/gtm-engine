@@ -33,6 +33,7 @@ export async function POST(request: Request) {
     .where(
       and(
         eq(posts.status, 'queued'),
+        eq(posts.userId, userId),
         lte(posts.scheduledAt, now),
         isNull(posts.publishedAt),
         ne(posts.platform, 'reddit')
@@ -85,13 +86,13 @@ export async function POST(request: Request) {
 
       await db.update(posts)
         .set({ status: 'published', publishedAt: now })
-        .where(eq(posts.id, post.id));
+        .where(and(eq(posts.id, post.id), eq(posts.userId, userId)));
 
       results.push({ id: post.id, success: true });
     } catch (error) {
       await db.update(posts)
         .set({ status: 'failed' })
-        .where(eq(posts.id, post.id));
+        .where(and(eq(posts.id, post.id), eq(posts.userId, userId)));
       results.push({ id: post.id, success: false, error: String(error) });
     }
   }

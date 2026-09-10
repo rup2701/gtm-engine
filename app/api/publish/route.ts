@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { posts, userSettings } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { getCurrentUserId } from '@/lib/auth';
 import { publishToLinkedIn } from '@/lib/publishers/linkedin';
 import { publishToTwitter } from '@/lib/publishers/twitter';
@@ -21,7 +21,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Get the post
-    const [post] = await db.select().from(posts).where(eq(posts.id, postId));
+    const [post] = await db.select()
+      .from(posts)
+      .where(and(eq(posts.id, postId), eq(posts.userId, userId)));
     if (!post) {
       return NextResponse.json({ error: 'Post not found' }, { status: 404 });
     }
@@ -82,7 +84,7 @@ export async function POST(request: NextRequest) {
         // analytics: result.analytics || {},
         updatedAt: new Date(),
       })
-      .where(eq(posts.id, postId));
+      .where(and(eq(posts.id, postId), eq(posts.userId, userId)));
 
     return NextResponse.json({
       success: true,

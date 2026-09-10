@@ -82,6 +82,7 @@ export async function POST(request: NextRequest) {
       .where(
         and(
           eq(posts.contextHash, contextHash),
+          eq(posts.userId, userId),
           eq(posts.status, 'draft'),
           eq(posts.weekKey, weekKey)
         )
@@ -183,6 +184,7 @@ export async function POST(request: NextRequest) {
 
     await db.insert(batches).values({
       id: batchId,
+      userId,
       contextHash: contextHash,
       weekKey: weekKey, // ✅ now exists
       postCount: genPosts.length,
@@ -193,6 +195,7 @@ export async function POST(request: NextRequest) {
     // Inside your API route
     const savedPosts = await db.insert(posts).values(
       genPosts.map((post: GeneratedPost) => ({
+        userId,
         batchId: batchId,
         weekKey: weekKey,
         dayOfWeek: post.day, 
