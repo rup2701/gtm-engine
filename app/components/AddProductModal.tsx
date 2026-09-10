@@ -34,6 +34,7 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
   const [icp, setIcp] = useState('');
   const [tone, setTone] = useState('');
   const [categories, setCategories] = useState<string[]>([]);
+  const [newCategory, setNewCategory] = useState('');
 
   // Step 3
   const [frequency, setFrequency] = useState(3);
@@ -46,6 +47,14 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
   const handleFrequencyChange = (value: number) => {
     setFrequency(value);
     setTimes(DEFAULT_TIMES[value] || ['09:00']);
+  };
+
+  const addCategory = () => {
+    const category = newCategory.trim();
+    if (!category || categories.includes(category)) return;
+
+    setCategories((current) => [...current, category]);
+    setNewCategory('');
   };
 
   const handleScrapeAndExtract = async () => {
@@ -203,15 +212,46 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
             />
 
             <label className="block text-xs text-gray-600 mb-1">Categories</label>
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex flex-wrap gap-2 mb-3">
               {categories.map((c) => (
                 <span
                   key={c}
-                  className="px-3 py-1 text-xs bg-[#00b377]/10 text-[#00b377] rounded"
+                  className="inline-flex items-center gap-1 rounded bg-[#00b377]/10 px-3 py-1 text-xs text-[#00b377]"
                 >
                   {c}
+                  <button
+                    type="button"
+                    onClick={() => setCategories((current) => current.filter((category) => category !== c))}
+                    aria-label={`Remove ${c}`}
+                    className="ml-1 text-[#008d61] hover:text-red-600"
+                  >
+                    ×
+                  </button>
                 </span>
               ))}
+            </div>
+
+            <div className="mb-4 flex gap-2">
+              <input
+                value={newCategory}
+                onChange={(event) => setNewCategory(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    addCategory();
+                  }
+                }}
+                placeholder="Add a category"
+                className="min-w-0 flex-1 rounded border border-gray-200 p-2 text-sm focus:border-[#00b377] focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={addCategory}
+                disabled={!newCategory.trim()}
+                className="rounded border border-[#00b377] px-3 py-2 text-sm font-bold text-[#008d61] hover:bg-[#00b377]/10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Add
+              </button>
             </div>
 
             <div className="flex gap-3">
