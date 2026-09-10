@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { CalendarDays, LogOut, Settings, Sparkles, Zap } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { CalendarDays, LogOut, Settings, Sparkles, Zap, Plus } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import type { ReactNode } from 'react';
 
@@ -14,6 +14,7 @@ const navigation = [
 
 export default function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-zinc-950">
@@ -81,6 +82,15 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
               );
             })}
           </nav>
+
+          <button
+            type="button"
+            onClick={() => router.push('/dashboard/?addProduct=true')}
+            className="mt-6 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-950"
+          >
+            <Plus className="h-4 w-4 text-zinc-400" />
+            Add product
+          </button>
 
           <button
             type="button"

@@ -104,9 +104,9 @@ export async function POST(request: NextRequest) {
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
     const privateKey = process.env.GOOGLE_PRIVATE_KEY;
 
-      if (!clientEmail || !privateKey) {
-        throw new Error('Missing GOOGLE_CLIENT_EMAIL or GOOGLE_PRIVATE_KEY environment variables.');
-      }
+    if (!clientEmail || !privateKey) {
+      throw new Error('Missing GOOGLE_CLIENT_EMAIL or GOOGLE_PRIVATE_KEY environment variables.');
+    }
 
     // 2. Initialize the NEW unified GoogleGenAI client
     const ai = new GoogleGenAI({

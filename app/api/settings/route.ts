@@ -22,10 +22,6 @@ export async function GET() {
         ? {
             id: settings.id,
             userId: settings.userId,
-            frequencyMin: settings.frequencyMin,
-            frequencyMax: settings.frequencyMax,
-            publishTimes: settings.publishTimes,
-            autoPublish: settings.autoPublish,
             tone: settings.tone,
             icp: settings.icp,
           }

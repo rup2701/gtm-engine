@@ -114,16 +114,40 @@ export const userSettings = pgTable('user_settings', {
   redditSubreddits: jsonb('reddit_subreddits').$type<string[]>().default([]),
   discordWebhookUrl: text('discord_webhook_url'),
   
-  // Publishing rules
-  frequencyMin: integer('frequency_min').default(3),
-  frequencyMax: integer('frequency_max').default(5),
-  publishTimes: json('publish_times').default(['09:00', '13:00', '17:00']),
-  autoPublish: boolean('auto_publish').default(true),
-  
   // User context
   tone: text('tone').default('authoritative'),
   icp: text('icp'),
   
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const products = pgTable('products', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id').references(() => organizations.id).notNull(),
+  name: varchar('name', { length: 100 }).notNull(),
+  website: varchar('website', { length: 255 }),
+  description: text('description'),
+  icp: text('icp'),
+  tone: varchar('tone', { length: 50 }),
+  categories: text('categories'), // JSON array
+  frequencyMin: integer('frequency_min').default(3),
+  frequencyMax: integer('frequency_max').default(5),
+  publishTimes: json('publish_times').default(['09:00', '13:00', '17:00']),
+  platforms: jsonb('platforms').$type<string[]>().default([]),
+  autoPublish: boolean('auto_publish').default(true),
+  lastScrapedAt: timestamp('last_scraped_at'),
+  scrapedRootUrl: text('scraped_root_url'),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const scrapedContent = pgTable('scraped_content', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  productId: uuid('product_id').references(() => products.id).notNull(),
+  url: text('url').notNull(),
+  title: text('title'),
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
