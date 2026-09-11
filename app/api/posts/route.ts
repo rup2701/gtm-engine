@@ -7,15 +7,19 @@ import { getCurrentUserId } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   const userId = await getCurrentUserId();
-  console.log('Fetching posts for userId:', userId);
-  
+
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const searchParams = request.nextUrl.searchParams;
+  const productId = searchParams.get('productId');
   const weekKey = searchParams.get('weekKey'); // "2026-W36"
   const batchId = searchParams.get('batchId');
+
+  if (!productId) {
+    return NextResponse.json({ error: 'productId required' }, { status: 400 });
+  }
 
   if (!weekKey && !batchId) {
     return NextResponse.json(
@@ -26,12 +30,12 @@ export async function GET(request: NextRequest) {
 
   try {
     const whereClause = batchId
-      ? and(eq(posts.batchId, batchId), eq(posts.userId, userId))
-      : and(eq(posts.weekKey, weekKey as string), eq(posts.userId, userId));
+      ? and(eq(posts.productId, productId), eq(posts.batchId, batchId))
+      : and(eq(posts.productId, productId), eq(posts.weekKey, weekKey as string));
 
     const results = await db.query.posts.findMany({
       where: whereClause,
-      orderBy: (posts, { asc }) => [asc(posts.dayOfWeek), asc(posts.scheduledAt)]
+      orderBy: (posts, { asc }) => [asc(posts.dayOfWeek), asc(posts.scheduledAt)],
     });
 
     // Group by day for calendar view

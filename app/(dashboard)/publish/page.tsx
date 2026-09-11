@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, RefreshCw, Edit, Send } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 
 type Post = {
   id: string;
@@ -112,6 +113,9 @@ export default function StagingPage() {
   const [hoveredPost, setHoveredPost] = useState<string | null>(null);
   const hoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const searchParams = useSearchParams();
+  const productId = searchParams.get('productId');
+
   const showPostDetails = (postId: string) => {
     if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
     hoverTimeout.current = setTimeout(() => setHoveredPost(postId), 500);
@@ -145,7 +149,7 @@ export default function StagingPage() {
     setFetchError(null);
     const weekKey = getWeekKey(offset);
     try {
-      const res = await fetch(`/api/posts?weekKey=${weekKey}`);
+      const res = await fetch(`/api/posts?weekKey=${weekKey}&productId=${productId}`);
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || 'Failed to fetch posts');

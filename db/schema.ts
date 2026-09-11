@@ -14,6 +14,7 @@ export const batches = pgTable('batches', {
 export const posts = pgTable('posts', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id').references(() => users.id).notNull(),
+  productId: uuid('product_id').references(() => products.id).notNull(),
   batchId: uuid('batch_id').references(() => batches.id).notNull(),
   
   scheduledAt: timestamp('scheduled_at').notNull(),
@@ -99,7 +100,7 @@ export const userConfig = pgTable('user_config', {
   contextHash: varchar('context_hash', { length: 64 }),
 });
 
-// db/schema.ts
+
 export const userSettings = pgTable('user_settings', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull(),
@@ -125,6 +126,7 @@ export const userSettings = pgTable('user_settings', {
 export const products = pgTable('products', {
   id: uuid('id').defaultRandom().primaryKey(),
   organizationId: uuid('organization_id').references(() => organizations.id).notNull(),
+  
   name: varchar('name', { length: 100 }).notNull(),
   website: varchar('website', { length: 255 }),
   description: text('description'),

@@ -2,7 +2,6 @@
 'use client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signOut } from 'next-auth/react';
 import { Zap } from 'lucide-react';
 import { useState } from 'react';
 

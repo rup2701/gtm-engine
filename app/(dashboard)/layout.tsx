@@ -12,7 +12,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!session?.user?.id) redirect('/login');
 
   const orgId = session.user.organizationId;
-  console.log('Organization ID:', orgId); // Debugging line to check the organization ID
   const userProducts = orgId
     ? await db.select().from(products).where(eq(products.organizationId, orgId))
     : [];
@@ -26,7 +25,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         activeProduct={activeProduct ? { id: activeProduct.id, name: activeProduct.name } : null}
       />
       <div className="flex flex-1 overflow-hidden">
-        <DashboardSidebar />
+        <DashboardSidebar activeProduct={activeProduct?.id} />
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
