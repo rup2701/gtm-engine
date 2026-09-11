@@ -1,10 +1,34 @@
-import DashboardShell from '../components/DashboardShell';
-import { auth } from '@/lib/auth';
+// app/(dashboard)/layout.tsx
 import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
+import { db } from '@/db';
+import { products } from '@/db/schema';
+import { eq } from 'drizzle-orm';
+import DashboardSidebar from '@/app/components/DashboardSidebar';
+import TopNav from '../components/TopNav';
 
-export default async function DashboardLayout({ children }: LayoutProps<'/'>) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
 
-  return <DashboardShell>{children}</DashboardShell>;
+  const orgId = session.user.organizationId;
+  console.log('Organization ID:', orgId); // Debugging line to check the organization ID
+  const userProducts = orgId
+    ? await db.select().from(products).where(eq(products.organizationId, orgId))
+    : [];
+
+  const activeProduct = userProducts[0] || null;
+
+  return (
+    <div className="h-screen flex flex-col bg-[#f8fafc]">
+      <TopNav
+        products={userProducts.map((p) => ({ id: p.id, name: p.name }))}
+        activeProduct={activeProduct ? { id: activeProduct.id, name: activeProduct.name } : null}
+      />
+      <div className="flex flex-1 overflow-hidden">
+        <DashboardSidebar />
+        <main className="flex-1 overflow-y-auto">{children}</main>
+      </div>
+    </div>
+  );
 }
