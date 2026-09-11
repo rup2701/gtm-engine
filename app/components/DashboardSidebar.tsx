@@ -3,14 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { CalendarDays, Home, LogOut, Settings, Sparkles } from 'lucide-react';
+import { CalendarDays, Home, LayoutGrid, LogOut, Settings, Sparkles } from 'lucide-react';
 
 
 export default function DashboardSidebar() {
   const pathname = usePathname();
 
   const navItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: Home },
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
     { href: '/generate', label: 'Generate', icon: Sparkles },
     { href: '/publish', label: 'Publish', icon: CalendarDays },
     { href: '/settings', label: 'Settings', icon: Settings },
@@ -18,6 +18,9 @@ export default function DashboardSidebar() {
 
   return (
     <aside className="w-56 border-r border-gray-200 bg-white h-full flex flex-col p-3">
+      <div className="mt-2 mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
+            Workspace
+          </div>
       <nav className="flex flex-col gap-1">
         {navItems.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href;
