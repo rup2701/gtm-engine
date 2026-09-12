@@ -35,11 +35,11 @@ export default function TopNav({
       </Link>
         <button
           onClick={() => setOpen(!open)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded border border-gray-200 text-sm hover:border-gray-300"
+          className="flex items-center gap-2 px-3 py-1.5 rounded border text-medium border-gray-200 text-sm md:text-lg hover:border-gray-300"
         >
           <span className="w-2 h-2 rounded-full bg-[#00b377]" />
           {activeProduct?.name || 'No product'}
-          <span className="text-gray-400 text-xs">▾</span>
+          <span className="text-gray-400 text-xl">▾</span>
         </button>
 
         {open && (
@@ -51,7 +51,7 @@ export default function TopNav({
                   setOpen(false);
                   router.push(`/dashboard?productId=${p.id}`);
                 }}
-                className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${
+                className={`w-full text-left px-3 py-2 text-sm md:text-md hover:bg-gray-50 ${
                   p.id === activeProduct?.id
                     ? 'text-[#00b377] font-semibold'
                     : 'text-gray-700'
@@ -65,7 +65,7 @@ export default function TopNav({
                 setOpen(false);
                 router.push('/dashboard?addProduct=true');
               }}
-              className="w-full text-left px-3 py-2 text-sm text-gray-500 border-t border-gray-100 hover:bg-gray-50"
+              className="w-full text-left px-3 py-2 text-sm md:text-md text-gray-500 border-t border-gray-100 hover:bg-gray-50"
             >
               + Add Product
             </button>

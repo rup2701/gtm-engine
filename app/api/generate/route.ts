@@ -166,9 +166,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    
     const text = response.text;
-    console.log('Generated content', text);
     
     if (!text) {
       throw new Error('Vertex AI returned empty content. Check model permissions and quota.');

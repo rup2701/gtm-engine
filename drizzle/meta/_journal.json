@@ -127,6 +127,13 @@
       "when": 1789150242525,
       "tag": "0017_left_bill_hollister",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1789226762655,
+      "tag": "0018_groovy_tarot",
+      "breakpoints": true
     }
   ]
 }

@@ -129,9 +129,9 @@ export const products = pgTable('products', {
   
   name: varchar('name', { length: 100 }).notNull(),
   website: varchar('website', { length: 255 }),
-  description: text('description'),
-  icp: text('icp'),
-  tone: varchar('tone', { length: 50 }),
+  description: varchar('description', { length: 300 }),
+  icp: varchar('icp', { length: 300 }),
+  tone: varchar('tone', { length: 200 }),
   categories: text('categories'), // JSON array
   frequencyMin: integer('frequency_min').default(3),
   frequencyMax: integer('frequency_max').default(5),
