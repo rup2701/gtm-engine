@@ -1,13 +1,10 @@
 // app/(dashboard)/dashboard/page.tsx
-// ...existing code...
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { products } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
 import ProductAddModalGate from '@/app/components/ProductAddModalGate';
-import EditableField from '@/app/components/ui/EditableField';
-import { updateProduct } from './action';
 import ProductEditor from '@/app/components/ProductEditor';
 
 export default async function ProductDashboardPage({
@@ -38,6 +35,10 @@ export default async function ProductDashboardPage({
       <div className="p-10 max-w-3xl">
         <h1 className="text-2xl font-bold mb-2">{active.name}</h1>
         <p className="text-gray-500 mb-8">{active.description}</p>
+
+        <p className="text-sm text-gray-600 font-medium mb-4">
+          This is what DispatchOS knows about your business. Edits here shape every post. 
+        </p>
         <ProductEditor product={active} />
       </div>
       {showAddProduct && <ProductAddModalGate open={showAddProduct} closeHref="/dashboard" />}
