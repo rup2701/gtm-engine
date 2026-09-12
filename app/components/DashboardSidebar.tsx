@@ -5,8 +5,13 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { CalendarDays, LayoutGrid, LogOut, Settings, Sparkles } from 'lucide-react';
 
+type DashboardSidebarProps = {
+  activeProduct: string | null;
+};
 
-export default function DashboardSidebar({ activeProduct }: { activeProduct: string }) {
+export default function DashboardSidebar({
+  activeProduct,
+}: DashboardSidebarProps) {
   const pathname = usePathname();
 
   const navItems = [

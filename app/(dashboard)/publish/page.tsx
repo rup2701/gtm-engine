@@ -144,19 +144,36 @@ export default function StagingPage() {
     return `${monday.toLocaleDateString('en-US', options)} - ${friday.toLocaleDateString('en-US', options)}`;
   };
 
-  const fetchWeekData = async (offset: number) => {
+  const fetchWeekData = async (offset: number, currentProductId?: string | null) => {
+    const url = new URL('/api/posts', window.location.origin);
+    url.searchParams.set('weekKey', getWeekKey(offset));
+    console.log('Fetching week data for weekKey:', getWeekKey(offset), 'and productId:', currentProductId);
+    if (currentProductId) {
+      url.searchParams.set('productId', currentProductId);
+    }
+    
     setLoading(true);
     setFetchError(null);
     const weekKey = getWeekKey(offset);
+
     try {
-      const res = await fetch(`/api/posts?weekKey=${weekKey}&productId=${productId}`);
+      const url = new URL('/api/posts', window.location.origin);
+      url.searchParams.set('weekKey', weekKey);
+      if (productId) {
+        url.searchParams.set('productId', productId);
+      }
+
+      const res = await fetch(url.toString());
       const data = await res.json();
+
       if (!res.ok) {
         throw new Error(data.error || 'Failed to fetch posts');
       }
+
       if (!Array.isArray(data.posts)) {
         throw new Error('Posts response is missing the posts list');
       }
+
       setWeekData(data);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch posts';
@@ -168,9 +185,12 @@ export default function StagingPage() {
     }
   };
 
-  useEffect(() => {
-    fetchWeekData(weekOffset);
-  }, [weekOffset]);
+ useEffect(() => {
+   const currentProductId = searchParams.get('productId');
+   console.log('useEffect triggered with weekOffset:', weekOffset, 'and productId:', currentProductId); 
+  fetchWeekData(weekOffset, currentProductId);
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, [weekOffset, searchParams]);
 
   const updatePostStatus = async (postId: string, status: string) => {
     const res = await fetch(`/api/posts/${postId}`, {

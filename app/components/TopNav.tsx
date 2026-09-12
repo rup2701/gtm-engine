@@ -3,17 +3,21 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Zap } from 'lucide-react';
-import { useState } from 'react';
+import { Dispatch, SetStateAction, useState } from 'react';
 
 type Product = { id: string; name: string };
+
+type TopNavProps = {
+  products: Product[];
+  activeProduct: Product| null;
+  onProductChange: Dispatch<SetStateAction<Product | null>>;
+};
 
 export default function TopNav({
   products,
   activeProduct,
-}: {
-  products: Product[];
-  activeProduct: Product | null;
-}) {
+  onProductChange,
+}: TopNavProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
@@ -24,7 +28,7 @@ export default function TopNav({
       {/* Center: Product switcher */}
       <div className="flex items-center gap-2 relative">
       <Link
-        href="/dashboard"
+        href={`/dashboard?productId=${activeProduct?.id || ''}`}
         className="flex items-center gap-3"
         aria-label="dispatchOS home"
       >
@@ -50,6 +54,7 @@ export default function TopNav({
                 onClick={() => {
                   setOpen(false);
                   router.push(`/dashboard?productId=${p.id}`);
+                  onProductChange(p) 
                 }}
                 className={`w-full text-left px-3 py-2 text-sm md:text-md hover:bg-gray-50 ${
                   p.id === activeProduct?.id
@@ -79,12 +84,6 @@ export default function TopNav({
           <span className="h-2 w-2 rounded-full bg-emerald-400" />
           Distribution engine online
         </div>
-        {/* <button
-          onClick={() => signOut({ callbackUrl: '/login' })}
-          className="text-sm text-gray-600 hover:text-gray-900"
-        >
-          Log out
-        </button> */}
       </div>
     </header>
   );
