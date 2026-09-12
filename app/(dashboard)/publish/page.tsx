@@ -137,7 +137,7 @@ export default function StagingPage() {
     const friday = new Date(monday);
     friday.setDate(friday.getDate() + 4);
     const options: Intl.DateTimeFormatOptions = {
-      month: 'long',
+      month: 'short',
       day: 'numeric',
       year: 'numeric',
     };
@@ -294,7 +294,7 @@ export default function StagingPage() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold text-gray-900">Content Calendar</h1>
-          <span className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full border">
+          <span className="text-sm text-gray-700 font-mono bg-white px-3 py-1 rounded-full border">
             {getWeekRange(weekOffset)}
           </span>
           {isPastWeek(weekOffset) && (
@@ -313,7 +313,7 @@ export default function StagingPage() {
 
           <button
             onClick={() => setWeekOffset(0)}
-            className="px-3 py-2 text-sm bg-white rounded-lg border hover:bg-gray-50 transition"
+            className="px-3 py-2 text-sm font-medium bg-white rounded-lg border hover:bg-gray-50 transition"
           >
             This Week
           </button>
@@ -336,7 +336,7 @@ export default function StagingPage() {
           <button
             onClick={() => handleRegenerate(false)}
             disabled={isPastWeek(weekOffset)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition ${
               isPastWeek(weekOffset)
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 : 'bg-black text-white hover:bg-gray-900'
@@ -349,7 +349,7 @@ export default function StagingPage() {
           <button
             onClick={() => handleRegenerate(true)}
             disabled={isPastWeek(weekOffset)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm ${
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition ${
               isPastWeek(weekOffset)
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 : 'bg-black text-white hover:bg-gray-900'
@@ -390,7 +390,7 @@ export default function StagingPage() {
             {!isPastWeek(weekOffset) && (
               <button
                 onClick={() => handleRegenerate(false)}
-                className="px-6 py-2 bg-[var(--brand)] text-white rounded-lg hover:bg-[var(--brand-hover)] transition"
+                className="px-6 py-2 bg-[var(--brand)] font-medium  rounded-lg hover:bg-[var(--brand-hover)] transition"
               >
                 <RefreshCw className="w-4 h-4 inline mr-2" />
                 Generate Posts
