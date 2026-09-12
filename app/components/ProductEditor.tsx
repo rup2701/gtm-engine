@@ -5,6 +5,7 @@
 import { useRouter } from 'next/navigation';
 import { updateProduct } from '../(dashboard)/dashboard/action';
 import EditableField from './ui/EditableField';
+import PillEditor from './PillEditor';
 
 type Product = {
   id: string;
@@ -69,26 +70,24 @@ export default function ProductEditor({ product }: { product: Product }) {
         onSave={(v: unknown) => save({ tone: v })}
         multiline
       />
-      <EditableField
+      <PillEditor
         label="Categories"
-        value={categories}
-        onSave={(v: string) =>
-          save({ categories: JSON.stringify(v.split(',').map((s: string) => s.trim())) })
-        }
+        values={categories}
+        onSave={(next) => save({ categories: JSON.stringify(next) })}
       />
-      <EditableField
-        label="Times"
-        value={times}
-        onSave={(v: string) =>
-          save({ publishTimes: JSON.stringify(v.split(',').map((s: string) => s.trim())) })
-        }
-      />
-      <EditableField
+
+      <PillEditor
         label="Channels"
-        value={platforms}
-        onSave={(v: string) =>
-          save({ platforms: JSON.stringify(v.split(',').map((s: string) => s.trim())) })
-        }
+        values={platforms}
+        onSave={(next) => save({ platforms: JSON.stringify(next) })}
+        sanitize={(v) => v.trim().toLowerCase()}
+      />
+
+      <PillEditor
+        label="Times"
+        values={times }
+        onSave={(next) => save({ publishTimes: JSON.stringify(next) })}
+        sanitize={(v) => v.trim()} // keep 09:00 format
       />
     </div>
   );

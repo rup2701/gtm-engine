@@ -33,7 +33,7 @@ export default function EditableField({
 
   return (
     <div className="grid grid-cols-[180px_1fr] gap-4 py-3 border-b border-gray-100 items-start">
-      <span className="text-sm text-gray-500">{label}</span>
+      <span className="text-md text-gray-500">{label}</span>
 
       <div className="flex items-center gap-2">
         {editing ? (
@@ -44,14 +44,14 @@ export default function EditableField({
                 onChange={(e) => setDraft(e.target.value)}
                 autoFocus
                 rows={3}
-                className="flex-1 border border-[#00b377] rounded px-3 py-2 text-sm focus:outline-none"
+                className="flex-1 border border-[#00b377] rounded px-3 py-2 text-md focus:outline-none"
               />
             ) : (
               <input
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 autoFocus
-                className="flex-1 border border-[#00b377] rounded px-3 py-2 text-sm focus:outline-none"
+                className="flex-1 border border-[#00b377] rounded px-3 py-2 text-md focus:outline-none"
               />
             )}
 
@@ -77,7 +77,7 @@ export default function EditableField({
           <>
             <span
               onClick={() => setEditing(true)}
-              className="flex-1 text-sm text-gray-800 cursor-text hover:text-[#00b377] transition-colors"
+              className="flex-1 text-md text-gray-800 cursor-text hover:text-[#00b377] transition-colors"
             >
               {value || '—'}
             </span>
