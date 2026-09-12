@@ -35,7 +35,7 @@ export default function TopNav({
       </Link>
         <button
           onClick={() => setOpen(!open)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded border text-medium border-gray-200 text-sm md:text-lg hover:border-gray-300"
+          className="flex items-center gap-2 px-3 py-1.5 rounded border text-gray-700 border-gray-200 text-sm md:text-md font-bold hover:border-gray-300"
         >
           <span className="w-2 h-2 rounded-full bg-[#00b377]" />
           {activeProduct?.name || 'No product'}
