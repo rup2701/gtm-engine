@@ -44,7 +44,7 @@ export default function PillEditor({
         {values.map((v) => (
           <span
             key={v}
-            className="inline-flex items-center gap-1 px-2 py-1 bg-[#00b377]/10 text-[#00b377] text-md rounded"
+            className="inline-flex items-center font-medium font-mono gap-1 px-2 py-1 bg-[#00b377]/50 text-gray-700 text-xs rounded"
           >
             {v}
             <button
