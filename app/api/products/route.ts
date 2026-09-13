@@ -14,7 +14,7 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const {
-      brandName, description, icp, tone, categories,
+      brandName, description, icp, tone, categories, url,
       frequency, times, channels, autoPublish = true, rawText,
     } = body;
 
@@ -29,6 +29,7 @@ export async function POST(req: Request) {
 
     await db.insert(products).values({
       id: productId,
+      website: url,
       organizationId: session.user.organizationId!,
       name: brandName,
       description,

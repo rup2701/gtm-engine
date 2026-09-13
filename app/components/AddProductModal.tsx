@@ -96,34 +96,32 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const handleSave = async () => {
+  const handleGenerate = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/products', {
+      // 1. Save product
+      const saveRes = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          brandName,
-          description,
-          icp,
-          tone,
-          categories,
-          frequency,
-          times,
-          channels,
-          rawText,
+          brandName, description, icp, tone, categories, url,
+          frequency, times, channels, rawText,
         }),
       });
+      const { productId } = await saveRes.json();
 
-      const responseData = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(responseData.error || `Save failed (${res.status})`);
-      }
+      // 2. Generate content
+      await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId }),
+      });
 
-      router.push(`/generate?productId=${responseData.productId}`);
+      // 3. Redirect
+      router.push(`/publish?productId=${productId}`);
     } catch (err) {
       console.error(err);
-      alert(err instanceof Error ? err.message : 'Failed to save.');
+      alert('Something went wrong.');
     } finally {
       setLoading(false);
     }
@@ -333,16 +331,16 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
             <div className="flex gap-3">
               <button
                 onClick={() => setStep(2)}
-                className="flex-1 border border-gray-200 py-3 rounded font-bold"
+                className="flex-1 border border-gray-200 py-2 rounded font-bold"
               >
                 ← Back
               </button>
               <button
-                onClick={handleSave}
+                onClick={handleGenerate}
                 disabled={loading}
-                className="flex-1 bg-[#00b377] text-white py-3 rounded font-bold hover:bg-[#008d61] disabled:opacity-50"
+                className="flex-1 bg-[#00b377] text-white py-2 rounded font-bold hover:bg-[#008d61] disabled:opacity-50"
               >
-                {loading ? 'Saving...' : 'Create Product'}
+                {loading ? 'Generating...' : 'Generate Content'}
               </button>
             </div>
           </>

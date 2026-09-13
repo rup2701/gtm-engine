@@ -23,7 +23,7 @@ type Product = {
 export default function ProductEditor({ product }: { product: Product }) {
   const router = useRouter();
 
-  const save = async (patch: Record<string, any>) => {
+  const save = async (patch: Record<string, unknown>) => {
     await updateProduct(product.id, patch);
     router.refresh();
   };

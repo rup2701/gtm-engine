@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { products } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { notFound } from 'next/navigation';
+
 import ProductAddModalGate from '@/app/components/ProductAddModalGate';
 import ProductEditor from '@/app/components/ProductEditor';
 
@@ -26,8 +26,8 @@ export default async function ProductDashboardPage({
 
   const showAddProduct = params.addProduct === 'true';
 
-  if (!active && !showAddProduct) {
-    notFound();
+  if (active === undefined && showAddProduct) {
+    return <ProductAddModalGate open={true} />;
   }
   
   return (
