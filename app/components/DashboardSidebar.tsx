@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { CalendarDays, LayoutGrid, LogOut, Settings, Sparkles } from 'lucide-react';
+import { CalendarDays, LayoutGrid, LogOut, Settings, SlidersHorizontal, Sparkles } from 'lucide-react';
 
 type DashboardSidebarProps = {
   activeProduct: string | null;
@@ -51,14 +51,15 @@ export default function DashboardSidebar({
       <div className="flex flex-col gap-2 border-t border-gray-200 pt-4">
         <Link
           href="/workspace/settings"
-          className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-950"
         >
+          <SlidersHorizontal className="h-4 w-4 text-zinc-400" />
           Workspace settings
         </Link>
          <button
             type="button"
             onClick={() => signOut({ callbackUrl: '/login' })}
-            className=" flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-950"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-950"
           >
             <LogOut className="h-4 w-4 text-zinc-400" />
             Sign out
