@@ -20,8 +20,9 @@ export const posts = pgTable('posts', {
   scheduledAt: timestamp('scheduled_at').notNull(),
   dayOfWeek: varchar('day_of_week', { length: 10 }).notNull(),
   
-  platform: varchar('platform', { length: 20 }).notNull(),
-  category: varchar('category', { length: 20 }).notNull(),
+  platform: varchar('platform', { length: 50 }).notNull(),
+  category: varchar('category', { length: 50 }).notNull(),
+  
   content: text('content').notNull(),
   editedContent: text('edited_content'),
   hook: text('hook'),

@@ -1,13 +1,18 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
-export default function DashboardPage() {
+export default function GeneratePage() {
   const [loading, setLoading] = useState(false);
   const [refreshScrape, setRefreshScrape] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+
+  const searchParams = useSearchParams();
+  const productId = searchParams.get('productId');
+  
   const handleGenerate = async () => {
     setLoading(true);
     setError(null);
@@ -15,7 +20,7 @@ export default function DashboardPage() {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshScrape }),
+        body: JSON.stringify({ refreshScrape, productId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to generate batch.');

@@ -22,9 +22,10 @@ export function getNextWeekDate(day: string): string {
 
 // lib/date-utils.ts
 export function getWeekIdentifier(date: Date): string {
-  const year = date.getFullYear();
-  const startOfYear = new Date(year, 0, 1);
-  const days = Math.floor((date.getTime() - startOfYear.getTime()) / 86400000);
-  const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
-  return `${year}-W${String(weekNumber).padStart(2, '0')}`;
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
 }

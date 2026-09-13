@@ -15,8 +15,8 @@ export default function DashboardSidebar({
   const pathname = usePathname();
 
   const navItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
-    { href: '/generate', label: 'Generate', icon: Sparkles },
+    { href: `/dashboard`, label: 'Dashboard', icon: LayoutGrid },
+    { href: `/generate?productId=${activeProduct}`, label: 'Generate', icon: Sparkles },
     { href: `/publish?productId=${activeProduct}`, label: 'Publish', icon: CalendarDays },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];

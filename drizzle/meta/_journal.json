@@ -134,6 +134,13 @@
       "when": 1789226762655,
       "tag": "0018_groovy_tarot",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1789310129154,
+      "tag": "0019_cold_karen_page",
+      "breakpoints": true
     }
   ]
 }

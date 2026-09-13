@@ -1,20 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
+import {NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import fs from 'fs/promises';
-import path from 'path';
+
 import 'dotenv/config'; // Ensure environment variables are loaded
 import { GoogleGenAI } from '@google/genai';
-import { batches, posts } from '@/db/schema';
+import { batches, posts, scrapedContent, products } from '@/db/schema';
 import { db } from '@/db';
 import crypto from 'crypto';
-
 import { getNextWeekDate, getWeekIdentifier } from '@/lib/date-utils';
+
 import { eq, and } from 'drizzle-orm';
 import { getCurrentUserId } from '@/lib/auth';
+import { buildContentPrompt } from '@/lib/prompts/buildContentPrompt';
+import { contentResponseSchema } from '@/lib/prompts/contentSchema';
 
-
-// Type-safe category enforcement matching your prompt requirements
-const VALID_CATEGORIES = ['design', 'engineering', 'ux', 'marketing', 'launch', 'build'] as const;
+// const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 type GeneratedPost = {
   category: string;
@@ -24,18 +23,9 @@ type GeneratedPost = {
   time: string;
 }
 
-async function loadContextFile(filename: string): Promise<string> {
+export async function POST(req: Request) {
   try {
-    const filePath = path.join(process.cwd(), 'data', filename);
-    return await fs.readFile(filePath, 'utf-8');
-  } catch (error) {
-    console.warn(`⚠️ Context file not found or unreadable: ${filename}. Proceeding without it.`);
-    return '';
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
+    
     const userId = await getCurrentUserId();
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -43,32 +33,45 @@ export async function POST(request: NextRequest) {
 
     // Optional: Allow overriding weeks/days via request body in the future
     // For now, defaults to the 5-day / 3-5 posts per day spec
-    const body = await request.json().catch(() => ({}));
-    const weeksToGenerate = body.weeks ?? 1;
+    // const body = await req.json().catch(() => ({}));
+    // const weeksToGenerate = body.weeks ?? 1;
 
-    // 1. Load both master contexts asynchronously from /data directory
-    const [creativeGrayContext, appnomicsContext] = await Promise.all([
-      loadContextFile('creativegray_master.md'),
-      loadContextFile('appnomics_master.md'),
-    ]);
-
-    if (!appnomicsContext) {
-      return NextResponse.json(
-        { error: 'appnomics_master.md is required but was not found in /data directory.' },
-        { status: 400 }
-      );
+    const { productId } = await req.json();
+    if (!productId) {
+      return NextResponse.json({ error: 'productId required' }, { status: 400 });
     }
+    console.log(`Generating content for productId: ${productId} by userId: ${userId}`);
+    
+    // 1. Fetch product
+    const [product] = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, productId))
+      .limit(1);
+
+    if (!product) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+
+    console.log(`Product found: ${product.name} (${product.id})`);
+
+    // 2. Fetch scraped content
+    const scraped = await db
+      .select()
+      .from(scrapedContent)
+      .where(eq(scrapedContent.productId, productId));
+
+    const scrapedContext = scraped
+      .map((p) => `# ${p.title}\n${p.content}`)
+      .join('\n\n---\n\n')
+      .slice(0, 8000);
 
     // Get current week key (e.g., "2025-W15")
     const weekKey = getWeekIdentifier(new Date());
     console.log(`Generating content for week: ${weekKey}`);
-    // return NextResponse.json({
-    //   success: false,
-    //   message: 'Content generation is temporarily disabled for testing. Please enable the generation logic.',
-    // });
-
+    
     // Build context with week + website content (for versioning)
-    const contextString = `${weekKey}:${appnomicsContext}`;
+    const contextString = `${weekKey}:${product.name}:${scrapedContext}: ${product.description}: ${product.icp}: ${product.tone}: ${product.categories}: ${product.frequencyMin}: ${product.frequencyMax}: ${product.publishTimes}: ${product.platforms}`;
 
     const contextHash = crypto
       .createHash('sha256')
@@ -101,6 +104,38 @@ export async function POST(request: NextRequest) {
         // Then continue to create new batch
     }
 
+  
+    const times = product
+        ? Array.isArray(product.publishTimes)
+          ? product.publishTimes
+          : typeof product.publishTimes === 'string'
+            ? JSON.parse(product.publishTimes || '[]')
+            : []
+      : [];
+    
+    const platforms = product
+        ? Array.isArray(product.platforms)
+          ? product.platforms
+          : typeof product.platforms === 'string'
+            ? JSON.parse(product.platforms || '[]')
+            : []
+      : [];
+    
+    // 3. Build prompt
+    const prompt = buildContentPrompt({
+      brandName: product.name,
+      description: product.description,
+      icp: product.icp,
+      tone: product.tone,
+      categories: JSON.parse(product.categories || '[]'),
+      frequencyMin: product.frequencyMin ?? 1,
+      frequencyMax: product.frequencyMax ?? 3,
+      publishTimes: times,
+      platforms: platforms,
+      websiteContext: scrapedContext
+    });
+
+    // 4. Call Gemini
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
     const privateKey = process.env.GOOGLE_PRIVATE_KEY;
 
@@ -121,64 +156,24 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // 3. Build the system-enforced prompt
-    const prompt = `You are the autonomous content and growth engine for Appnomics.
-
-      ### THE FOUNDATION & PAST AUTHORITY: CreativeGray Studio (Reference Data)
-      Use the following scraped background of CreativeGray's 12-year history, case studies (like EZLinks, PlaySquares, etc.), and architectural standards to establish undeniable authority and hard-earned engineering wisdom:
-      ${creativeGrayContext || '[No CreativeGray context available - rely on general senior agency expertise]'}
-
-      ### THE TARGET PRODUCT / THE FUTURE: Appnomics
-      Use the following scraped details of Appnomics as the primary product being built, marketed, and scaled:
-      ${appnomicsContext}
-
-      ### EXECUTION REQUIREMENTS:
-      1. **Volume & Cadence:** Generate a detailed, time-based content schedule for a full 5-day week, producing **3 to 5 posts per day**.
-      2. **Category Enforcement:** Every single post must explicitly tag its primary category from this exact array: [${VALID_CATEGORIES.join(', ')}].
-      3. **Platform Targeting:** Each post must specify its target platform (LinkedIn, Twitter/X, Reddit, etc.) and adapt tone/format accordingly.
-      4. **Voice & Tone:** Authoritative founder perspective. Leverages CreativeGray's hard-earned lessons to explain *why* Appnomics exists and how it solves real developer/builder friction. Do not pitch CreativeGray services; pitch Appnomics.
-      5. **The Angle:** "After building 20+ products and scaling software over a decade at CreativeGray, we built Appnomics to..."
-
-      Output the result in a clean, machine-parsable Markdown schedule complete with timestamps, categories, target platforms, and full post text.`;
-
-    // 4. Generate content
-    // Add this to your generateContent call
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
         responseMimeType: "application/json",
-        responseSchema: {
-          type: "ARRAY",
-          items: {
-            type: "OBJECT",
-            properties: {
-              day: { type: "STRING", description: "Monday, Tuesday, etc." },
-              time: { type: "STRING", description: "24-hour format without timezone, e.g. '09:00'" },
-              category: { type: "STRING", enum: [...VALID_CATEGORIES] },
-              platform: { type: "STRING", enum: ["twitter", "linkedin", "reddit"] },
-              content: { type: "STRING", description: "Full post text, platform-native formatting" },
-              hook: { type: "STRING", description: "First line hook for preview cards" }
-            },
-            required: ["day", "time", "category", "platform", "content"]
-          }
-        }
+        responseSchema: contentResponseSchema
       }
     });
 
-    const text = response.text;
-    
+    const text = response.text;  
     if (!text) {
       throw new Error('Vertex AI returned empty content. Check model permissions and quota.');
     }
-
-
-    const genPosts = JSON.parse(response.text);
-    // const post = genPosts[0]; // Sample post for logging
-    // const dateStr = `${getNextWeekDate(post.day)}T${post.time}`;
-    // console.log('dateStr sample:', dateStr);
- 
+    
+    // 5. Parse and save generated posts
+    const genPosts = JSON.parse(text);
     const batchId = uuidv4(); // Unique batch identifier for this generation
+    console.log('Generated posts:', genPosts[0]); // Log the first post for debugging
 
     await db.insert(batches).values({
       id: batchId,
@@ -194,6 +189,7 @@ export async function POST(request: NextRequest) {
     const savedPosts = await db.insert(posts).values(
       genPosts.map((post: GeneratedPost) => ({
         userId,
+        productId,
         batchId: batchId,
         weekKey: weekKey,
         dayOfWeek: post.day, 
@@ -231,6 +227,241 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+
+// import { NextRequest, NextResponse } from 'next/server';
+// import { v4 as uuidv4 } from 'uuid';
+// import fs from 'fs/promises';
+// import path from 'path';
+// import 'dotenv/config'; // Ensure environment variables are loaded
+// import { GoogleGenAI } from '@google/genai';
+// import { batches, posts } from '@/db/schema';
+// import { db } from '@/db';
+// import crypto from 'crypto';
+
+// import { getNextWeekDate, getWeekIdentifier } from '@/lib/date-utils';
+// import { eq, and } from 'drizzle-orm';
+// import { getCurrentUserId } from '@/lib/auth';
+
+
+// // Type-safe category enforcement matching your prompt requirements
+// const VALID_CATEGORIES = ['design', 'engineering', 'ux', 'marketing', 'launch', 'build'] as const;
+
+// type GeneratedPost = {
+//   category: string;
+//   platform: string;
+//   content: string;
+//   day: string;
+//   time: string;
+// }
+
+// async function loadContextFile(filename: string): Promise<string> {
+//   try {
+//     const filePath = path.join(process.cwd(), 'data', filename);
+//     return await fs.readFile(filePath, 'utf-8');
+//   } catch (error) {
+//     console.warn(`⚠️ Context file not found or unreadable: ${filename}. Proceeding without it.`);
+//     return '';
+//   }
+// }
+
+// export async function POST(request: NextRequest) {
+//   try {
+    // const userId = await getCurrentUserId();
+    // if (!userId) {
+    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // }
+
+    // // Optional: Allow overriding weeks/days via request body in the future
+    // // For now, defaults to the 5-day / 3-5 posts per day spec
+    // const body = await request.json().catch(() => ({}));
+    // const weeksToGenerate = body.weeks ?? 1;
+
+//     // 1. Load both master contexts asynchronously from /data directory
+//     const [creativeGrayContext, appnomicsContext] = await Promise.all([
+//       loadContextFile('creativegray_master.md'),
+//       loadContextFile('appnomics_master.md'),
+//     ]);
+
+//     if (!appnomicsContext) {
+//       return NextResponse.json(
+//         { error: 'appnomics_master.md is required but was not found in /data directory.' },
+//         { status: 400 }
+//       );
+//     }
+
+    // // Get current week key (e.g., "2025-W15")
+    // const weekKey = getWeekIdentifier(new Date());
+    // console.log(`Generating content for week: ${weekKey}`);
+    // // return NextResponse.json({
+    // //   success: false,
+    // //   message: 'Content generation is temporarily disabled for testing. Please enable the generation logic.',
+    // // });
+
+    // // Build context with week + website content (for versioning)
+    // const contextString = `${weekKey}:${appnomicsContext}`;
+
+    // const contextHash = crypto
+    //   .createHash('sha256')
+    //   .update(contextString)
+    //   .digest('hex');
+
+    // // Check for existing batch
+    // // Check if a batch already exists for this week + context
+    // const [existingBatch] = await db.select()
+    //   .from(posts)
+    //   .where(
+    //     and(
+    //       eq(posts.contextHash, contextHash),
+    //       eq(posts.userId, userId),
+    //       eq(posts.status, 'draft'),
+    //       eq(posts.weekKey, weekKey)
+    //     )
+    //   )
+    //   .limit(1);
+
+    // if (existingBatch) {
+    //   return NextResponse.json({
+    //     success: false,
+    //     message: 'Batch already exists for this week.',
+    //     batchId: existingBatch.batchId,
+    //   }, { status: 200 }); // ← 200 OK so frontend can handle gracefully
+
+    //     // Option B: Force regenerate by deleting old batch
+    //     // await db.delete(posts).where(eq(posts.batchId, existingBatch.batchId));
+    //     // Then continue to create new batch
+    // }
+
+//     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+//     const privateKey = process.env.GOOGLE_PRIVATE_KEY;
+
+//     if (!clientEmail || !privateKey) {
+//       throw new Error('Missing GOOGLE_CLIENT_EMAIL or GOOGLE_PRIVATE_KEY environment variables.');
+//     }
+
+//     // 2. Initialize the NEW unified GoogleGenAI client
+//     const ai = new GoogleGenAI({
+//       vertexai: true,             // CRITICAL: Tells the SDK to use Vertex AI & your $300 billing credits
+//       project: 'instaroom-501622', // Your GCP Project ID
+//       location: 'us-central1',
+//       googleAuthOptions: {
+//         credentials: {
+//           client_email: clientEmail,
+//           private_key: privateKey.replace(/\\n/g, '\n')
+//         }
+//       }
+//     });
+
+//     // 3. Build the system-enforced prompt
+//     const prompt = `You are the autonomous content and growth engine for Appnomics.
+
+//       ### THE FOUNDATION & PAST AUTHORITY: CreativeGray Studio (Reference Data)
+//       Use the following scraped background of CreativeGray's 12-year history, case studies (like EZLinks, PlaySquares, etc.), and architectural standards to establish undeniable authority and hard-earned engineering wisdom:
+//       ${creativeGrayContext || '[No CreativeGray context available - rely on general senior agency expertise]'}
+
+//       ### THE TARGET PRODUCT / THE FUTURE: Appnomics
+//       Use the following scraped details of Appnomics as the primary product being built, marketed, and scaled:
+//       ${appnomicsContext}
+
+//       ### EXECUTION REQUIREMENTS:
+//       1. **Volume & Cadence:** Generate a detailed, time-based content schedule for a full 5-day week, producing **3 to 5 posts per day**.
+//       2. **Category Enforcement:** Every single post must explicitly tag its primary category from this exact array: [${VALID_CATEGORIES.join(', ')}].
+//       3. **Platform Targeting:** Each post must specify its target platform (LinkedIn, Twitter/X, Reddit, etc.) and adapt tone/format accordingly.
+//       4. **Voice & Tone:** Authoritative founder perspective. Leverages CreativeGray's hard-earned lessons to explain *why* Appnomics exists and how it solves real developer/builder friction. Do not pitch CreativeGray services; pitch Appnomics.
+//       5. **The Angle:** "After building 20+ products and scaling software over a decade at CreativeGray, we built Appnomics to..."
+
+//       Output the result in a clean, machine-parsable Markdown schedule complete with timestamps, categories, target platforms, and full post text.`;
+
+//     // 4. Generate content
+//     // Add this to your generateContent call
+//     const response = await ai.models.generateContent({
+//       model: 'gemini-2.5-flash',
+//       contents: [{ role: 'user', parts: [{ text: prompt }] }],
+//       config: {
+//         responseMimeType: "application/json",
+//         responseSchema: {
+//           type: "ARRAY",
+//           items: {
+//             type: "OBJECT",
+//             properties: {
+//               day: { type: "STRING", description: "Monday, Tuesday, etc." },
+//               time: { type: "STRING", description: "24-hour format without timezone, e.g. '09:00'" },
+//               category: { type: "STRING", enum: [...VALID_CATEGORIES] },
+//               platform: { type: "STRING", enum: ["twitter", "linkedin", "reddit"] },
+//               content: { type: "STRING", description: "Full post text, platform-native formatting" },
+//               hook: { type: "STRING", description: "First line hook for preview cards" }
+//             },
+//             required: ["day", "time", "category", "platform", "content"]
+//           }
+//         }
+//       }
+//     });
+
+    // const text = response.text;
+    
+    // if (!text) {
+    //   throw new Error('Vertex AI returned empty content. Check model permissions and quota.');
+    // }
+
+
+  //   const genPosts = JSON.parse(response.text);
+  //   // const post = genPosts[0]; // Sample post for logging
+  //   // const dateStr = `${getNextWeekDate(post.day)}T${post.time}`;
+  //   // console.log('dateStr sample:', dateStr);
+ 
+  //   const batchId = uuidv4(); // Unique batch identifier for this generation
+
+  //   await db.insert(batches).values({
+  //     id: batchId,
+  //     userId,
+  //     contextHash: contextHash,
+  //     weekKey: weekKey, // ✅ now exists
+  //     postCount: genPosts.length,
+  //     status: 'draft',
+  //   });
+
+    
+  //   // Inside your API route
+  //   const savedPosts = await db.insert(posts).values(
+  //     genPosts.map((post: GeneratedPost) => ({
+  //       userId,
+  //       batchId: batchId,
+  //       weekKey: weekKey,
+  //       dayOfWeek: post.day, 
+  //       contextHash: contextHash,
+  //       category: post.category,
+  //       platform: post.platform,
+  //       content: post.content,
+  //       status: 'draft',
+  //       scheduledAt: new Date(`${getNextWeekDate(post.day)}T${post.time}`),
+  //       day: post.day,
+  //       time: post.time,
+  //       editedContent: null,
+  //       publishedAt: null,
+  //       analytics: {},
+  //       createdAt: new Date(),
+  //       updatedAt: new Date(),
+  //     }))
+  //   ).returning() as unknown[]; // ← returns saved posts with IDs
+
+  //   return NextResponse.json({
+  //     success: true,
+  //     batchId: batchId,
+  //     postCount: savedPosts.length,
+  //     message: `${savedPosts.length} posts staged for review.`
+  //   });
+  // } catch (error) {
+  //   console.error('Content Calendar Generation Failed:', error);
+
+  //   const message =
+  //     error instanceof Error ? error.message : 'Unknown error during content generation';
+
+  //   return NextResponse.json(
+  //     { error: message },
+  //     { status: 500 }
+  //   );
+  // }
+// }
 
 
 // Helper function to get the next week's date for a given day name
