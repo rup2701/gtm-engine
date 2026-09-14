@@ -294,7 +294,7 @@ export default function StagingPage() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold text-gray-900">Content Calendar</h1>
-          <span className="text-sm text-gray-700 font-mono bg-white px-3 py-1 rounded-full border">
+          <span className="text-[12px] bg-[#d4f2e9] md:text-sm text-gray-700 font-mono bg-white px-3 py-1 rounded-full border">
             {getWeekRange(weekOffset)}
           </span>
           {isPastWeek(weekOffset) && (
@@ -362,7 +362,7 @@ export default function StagingPage() {
           <button
             onClick={handleQueueAll}
             disabled={isPastWeek(weekOffset) || !hasPosts}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
+            className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition ${
               isPastWeek(weekOffset) || !hasPosts
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 : 'bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]'

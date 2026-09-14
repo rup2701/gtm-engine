@@ -22,7 +22,7 @@ export default function DashboardSidebar({
   ];
 
   return (
-    <aside className="w-56 border-r border-gray-200 bg-white h-full flex flex-col p-3">
+    <aside className="hidden md:block w-56 border-r border-gray-200 bg-white h-full flex flex-col p-3">
       <div className="mt-2 mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
         Workspace
       </div>

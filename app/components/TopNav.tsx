@@ -1,9 +1,10 @@
 // components/TopNav.tsx
 'use client';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Zap } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import { Dispatch, SetStateAction, useState } from 'react';
+import { CalendarDays, LogOut, Settings, Sparkles, Zap } from 'lucide-react';
 
 type Product = { id: string; name: string };
 
@@ -13,14 +14,24 @@ type TopNavProps = {
   onProductChange: Dispatch<SetStateAction<Product | null>>;
 };
 
+
+
 export default function TopNav({
   products,
   activeProduct,
   onProductChange,
 }: TopNavProps) {
+
+  const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
+  const navigation = [
+    { href: `/generate?productId=${activeProduct?.id}`, label: 'Generate', icon: Sparkles },
+    { href: `/publish?productId=${activeProduct?.id}`, label: 'Publish', icon: CalendarDays },
+    { href: '/settings', label: 'Settings', icon: Settings },
+  ];
+  
   return (
     <header className="h-14 border-b border-gray-200 bg-white flex items-center justify-between px-6">
       {/* Left: Logo */}
@@ -77,7 +88,32 @@ export default function TopNav({
           </div>
         )}
       </div>
-
+      <nav className="flex items-center gap-1 md:hidden" aria-label="Primary navigation">
+        {navigation.map(({ href, label, icon: Icon }) => {
+          const isActive = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              aria-label={label}
+              className={`rounded-md p-2 transition-colors ${
+                isActive ? 'bg-emerald-50 text-emerald-700' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-950'
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+            </Link>
+          );
+        })}
+        <button
+          type="button"
+          onClick={() => signOut({ callbackUrl: '/login' })}
+          className="rounded-md p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-950"
+          aria-label="Sign out"
+        >
+          <LogOut className="h-4 w-4" />
+        </button>
+      </nav>
+      
       {/* Right: Status + Logout */}
       <div className="flex items-center gap-4">
         <div className="hidden items-center gap-2 text-xs text-zinc-500 sm:flex">
