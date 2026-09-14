@@ -444,6 +444,18 @@ export default function StagingPage() {
                           : displayContent;
                       const isManualPlatform = post.platform === 'reddit';
 
+                      // 1. Force the ISO string representation
+                      const dateString = String(post.scheduledAt);
+
+                      // 2. Pass it directly to Date.parse() or new Date().getTime() 
+                      // Valid ISO strings ending in "Z" automatically force UTC synchronization
+                      const scheduled = new Date(dateString).getTime();
+                      const now = Date.now(); // Always pure UTC millisecond timestamp
+
+                      // 3. Log the EXACT difference to see the calculation error live
+            
+                      const isPast = !isNaN(scheduled) && scheduled <= now;
+
                       return (
                         <div
                           key={post.id}
@@ -557,14 +569,14 @@ export default function StagingPage() {
                                 >
                                   ❌ Drop
                                 </button>
-                                {/* {new Date(post.scheduledAt) <= new Date() && ( */}
+                                {!isManualPlatform && isPast && (
                                   <button
                                     onClick={() => handleFireNow(post.id)}
                                     className="text-xs px-2 py-1 bg-[var(--brand-soft)] text-[var(--brand-hover)] rounded hover:bg-[var(--brand-tint-hover)] transition"
                                   >
                                     <Send className="w-3 h-3 inline" /> Fire Now
                                   </button>
-                                {/* )} */}
+                                )}
                               </>
                             )}
 
