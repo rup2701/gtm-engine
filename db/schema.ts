@@ -1,4 +1,72 @@
-import { pgTable, uuid, varchar, text, timestamp, boolean, integer, real, jsonb, json } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, boolean, integer, real, jsonb, json, primaryKey } from 'drizzle-orm/pg-core';
+import type { AdapterAccountType } from "next-auth/adapters";
+
+// --- Your Existing Users Table (Updated to support NextAuth fields) ---
+export const users = pgTable('users', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  passwordHash: text('password_hash'),
+  name: varchar('name', { length: 100 }),
+  organizationId: uuid('organization_id').references(() => organizations.id),
+  
+  // NextAuth expects these optional fields for OAuth profiles:
+  emailVerified: timestamp('email_verified', { mode: 'date' }),
+  image: text('image'), 
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// --- New Table: NextAuth Accounts (Crucial for Account Linking) ---
+export const accounts = pgTable(
+  "accounts",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: text("type").$type<AdapterAccountType>().notNull(),
+    provider: text("provider").notNull(), // "google", "linkedin"
+    providerAccountId: text("provider_account_id").notNull(), // LinkedIn's ID
+    refresh_token: text("refresh_token"),
+    access_token: text("access_token"),
+    expires_at: integer("expires_at"),
+    token_type: text("token_type"),
+    scope: text("scope"),
+    id_token: text("id_token"),
+    session_state: text("session_state"),
+  },
+  (account) => [
+    {
+      compoundKey: primaryKey({
+        columns: [account.provider, account.providerAccountId],
+      }),
+    }
+  ]
+);
+
+// --- New Table: NextAuth Sessions ---
+export const sessions = pgTable("sessions", {
+  sessionToken: text("session_token").primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  expires: timestamp("expires", { mode: "date" }).notNull(),
+});
+
+// --- New Table: NextAuth Verification Tokens (For passwordless magic links if needed) ---
+export const verificationTokens = pgTable(
+  "verification_token",
+  {
+    identifier: text("identifier").notNull(),
+    token: text("token").notNull(),
+    expires: timestamp("expires", { mode: "date" }).notNull(),
+  },
+  (vt) => [
+    {
+      compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
+    }
+  ]
+);
+
 
 export const batches = pgTable('batches', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -80,15 +148,6 @@ export const subscriptions = pgTable('subscriptions', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// db/schema.ts
-export const users = pgTable('users', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  email: varchar('email', { length: 255 }).notNull().unique(),
-  passwordHash: text('password_hash'),
-  name: varchar('name', { length: 100 }),
-  organizationId: uuid('organization_id').references(() => organizations.id),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
 
 export const userConfig = pgTable('user_config', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -112,6 +171,8 @@ export const userSettings = pgTable('user_settings', {
   twitterRefreshToken: text('twitter_refresh_token'),
   linkedinAccessToken: text('linkedin_access_token'),
   linkedinPersonId: text('linkedin_person_id'),
+  linkedinRefreshToken: text('linkedin_refresh_token'),
+  linkedinExpiresAt: timestamp('linkedin_expires_at'),
   redditAccessToken: text('reddit_access_token'),
   redditSubreddits: jsonb('reddit_subreddits').$type<string[]>().default([]),
   discordWebhookUrl: text('discord_webhook_url'),

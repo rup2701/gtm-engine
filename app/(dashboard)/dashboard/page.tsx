@@ -29,10 +29,10 @@ export default async function ProductDashboardPage({
   if (active === undefined && showAddProduct) {
     return <ProductAddModalGate open={true} />;
   }
-  
+  console.log(active);
   return (
     <>
-      <div className="p-10 max-w-3xl">
+      {/* <div className="p-10 max-w-3xl">
         <h1 className="text-2xl font-bold mb-2">{active.name}</h1>
         <p className="text-gray-500 mb-8">{active.description}</p>
 
@@ -41,7 +41,7 @@ export default async function ProductDashboardPage({
         </p>
         <ProductEditor product={active} />
       </div>
-      {showAddProduct && <ProductAddModalGate open={showAddProduct} closeHref="/dashboard" />}
+      {showAddProduct && <ProductAddModalGate open={showAddProduct} closeHref="/dashboard" />} */}
     </>
   );
 }

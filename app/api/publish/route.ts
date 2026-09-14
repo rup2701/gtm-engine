@@ -1,7 +1,7 @@
 // app/api/publish/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { posts, userSettings } from '@/db/schema';
+import { posts, userSettings, accounts } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { getCurrentUserId } from '@/lib/auth';
 import { publishToLinkedIn } from '@/lib/publishers/linkedin';
@@ -32,7 +32,8 @@ export async function POST(request: NextRequest) {
     const [settings] = await db.select()
       .from(userSettings)
       .where(eq(userSettings.userId, userId));
-
+    
+    
     if (!settings) {
       return NextResponse.json({ error: 'No settings found' }, { status: 500 });
     }
@@ -52,22 +53,46 @@ export async function POST(request: NextRequest) {
         result = await publishToTwitter(content, settings.twitterAccessToken);
         break;
 
-      case 'linkedin':
-        if (!settings.linkedinAccessToken) {
+      case 'linkedin': { // Added block scope curly braces to safely contain block-scoped variables
+        const [linkedinAccount] = await db
+          .select()
+          .from(accounts)
+          .where(
+            and(
+              eq(accounts.userId, userId),
+              eq(accounts.provider, "linkedin")
+            )
+          )
+          .limit(1);
+
+        if (!linkedinAccount || !linkedinAccount.access_token) {
           throw new Error('LinkedIn token not configured');
         }
+
+        // Publish content using the token and the stored LinkedIn URN/Person ID
         result = await publishToLinkedIn(
           content,
-          settings.linkedinAccessToken,
-          settings.linkedinPersonId || undefined,
+          linkedinAccount.access_token,
+          linkedinAccount.providerAccountId || undefined,
         );
-        if (!settings.linkedinPersonId && result.analytics?.linkedinPersonId) {
-          await db.update(userSettings)
-            .set({ linkedinPersonId: result.analytics.linkedinPersonId })
-            .where(eq(userSettings.userId, userId));
+
+        // Fallback: If for some reason providerAccountId was missing, update the ACCOUNTS table, not userSettings
+        if (!linkedinAccount.providerAccountId && result?.analytics?.linkedinPersonId) {
+          await db
+            .update(accounts)
+            .set({ providerAccountId: result.analytics.linkedinPersonId })
+            .where(
+              and(
+                eq(accounts.userId, userId),
+                eq(accounts.provider, "linkedin")
+              )
+            );
         }
+
         console.log('LinkedIn publish result:', result);
         break;
+      }
+
 
       case 'reddit':
         // throw new Error('Reddit publishing not implemented yet');

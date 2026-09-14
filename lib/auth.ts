@@ -1,13 +1,41 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
+import LinkedIn from 'next-auth/providers/linkedin';
+import Google from 'next-auth/providers/google';
 import bcrypt from 'bcryptjs';
 import { db } from '@/db';
-import { users } from '@/db/schema';
+import { users, organizations, subscriptions, userSettings, accounts, sessions, verificationTokens } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { DrizzleAdapter } from '@auth/drizzle-adapter';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  // 1. Hook up the adapter to manage core user/account tracking automatically
+  adapter: DrizzleAdapter(db, {
+    usersTable: users,
+    accountsTable: accounts,
+    sessionsTable: sessions,
+    verificationTokensTable: verificationTokens,
+  }),
   session: { strategy: 'jwt' },
   providers: [
+    // Google Auth
+    Google({
+      clientId: process.env.AUTH_GOOGLE_ID!,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET!,
+      allowDangerousEmailAccountLinking: true, // Safe bridging across verified providers
+    }),
+    // LinkedIn Auth
+    LinkedIn({
+      clientId: process.env.AUTH_LINKEDIN_ID!,
+      clientSecret: process.env.AUTH_LINKEDIN_SECRET!,
+      allowDangerousEmailAccountLinking: true,
+      authorization: {
+        params: {
+          scope: 'openid profile email w_member_social',
+          prompt: 'login',
+        },
+      },
+    }),
     Credentials({
       credentials: {
         email: { label: 'Email', type: 'email' },
@@ -40,14 +68,71 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
+  
+  // 2. Automate secondary initialization (Org, Settings, Subs) when a brand new user joins via OAuth
+  events: {
+    async createUser({ user }) {
+      const email = user.email!;
+      const organizationId = crypto.randomUUID();
+
+      // Create Organization
+      await db.insert(organizations).values({
+        id: organizationId,
+        name: user.name || email.split('@')[0],
+        slug: email.split('@')[0] + '-' + Date.now(),
+      });
+
+      // Update User to reference their new Organization
+      await db
+        .update(users)
+        .set({ organizationId })
+        .where(eq(users.id, user.id!));
+
+      // Create Starter Subscription
+      await db.insert(subscriptions).values({
+        organizationId,
+        tier: 'starter',
+        productLimit: 1,
+        ragLimit: 1,
+        status: 'active',
+      });
+
+      // Initialize Empty User Settings Row
+      await db.insert(userSettings).values({
+        userId: user.id!,
+        tone: 'authoritative',
+      });
+    }
+  },
+
   callbacks: {
-    async jwt({ token, user }) {
+    // Adapter handles account bridging on signIn. We just allow access.
+    async signIn() {
+      return true;
+    },
+
+    async jwt({ token, user, trigger }) {
+      // On initial login, pull data from user record into the JWT
       if (user) {
         token.id = user.id;
-        token.organizationId = user.organizationId;
+        token.organizationId = (user as any).organizationId;
       }
+      
+      // Fallback: If user isn't present during standard session checks, fetch organizationId from DB
+      if (token.id && !token.organizationId) {
+        const [dbUser] = await db
+          .select({ organizationId: users.organizationId })
+          .from(users)
+          .where(eq(users.id, token.id as string))
+          .limit(1);
+        if (dbUser) {
+          token.organizationId = dbUser.organizationId;
+        }
+      }
+
       return token;
     },
+
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;

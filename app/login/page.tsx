@@ -2,6 +2,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
+import LinkedInButton from '../components/ui/LinkedInButton';
+import GoogleSignInButton from '../components/ui/GoogleSignInButton';
+
 
 export default function LoginPage() {
   const router = useRouter();
@@ -59,6 +62,7 @@ export default function LoginPage() {
           className="w-full bg-white border border-[#e5e7eb] rounded-[2px] px-4 py-3 text-[#111827] font-mono placeholder:text-[#9ca3af] focus:outline-none focus:border-[#00b377] focus:ring-1 focus:ring-[#00b377]"
         />
 
+        
         <button
           type="submit"
           disabled={loading}
@@ -66,6 +70,18 @@ export default function LoginPage() {
         >
           {loading ? 'Signing in...' : 'Sign In →'}
         </button>
+
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-[#f8fafc] px-3 text-gray-400">or</span>
+          </div>
+        </div>
+
+        <GoogleSignInButton />
+        <LinkedInButton label="Sign in with LinkedIn" />
 
         <p className="text-xs text-[#6b7280] font-mono text-center">
           Don&apos;t have an account?{' '}

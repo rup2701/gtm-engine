@@ -29,7 +29,7 @@ export default async function Home({
     .limit(1);
 
   if (userProducts.length === 0) {
-    redirect('/dashboard?addProduct=true');
+    // redirect('/dashboard?addProduct=true');
   }
 
   redirect('/dashboard');
