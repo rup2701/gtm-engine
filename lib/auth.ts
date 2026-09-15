@@ -72,7 +72,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   // 2. Automate secondary initialization (Org, Settings, Subs) when a brand new user joins via OAuth
   events: {
     async createUser({ user }) {
+      const userId = user.id!;
       const email = user.email!;
+
+      // 1. 🛡️ Check if this user already has an active organization assigned in Neon
+      const [existingUser] = await db
+        .select({ organizationId: users.organizationId })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      // If an organizationId is already present, this is an account-linking flow!
+      // Exit immediately to protect their existing organization association.
+      if (existingUser?.organizationId) {
+        console.log(`[Auth Event] User ${userId} already associated with organization ${existingUser.organizationId}. Skipping provisioning.`);
+        return;
+      }
+
+      // 2. Otherwise, this is a truly brand-new signup. Safe to provision:
       const organizationId = crypto.randomUUID();
 
       // Create Organization
@@ -86,7 +103,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       await db
         .update(users)
         .set({ organizationId })
-        .where(eq(users.id, user.id!));
+        .where(eq(users.id, userId));
 
       // Create Starter Subscription
       await db.insert(subscriptions).values({
@@ -95,12 +112,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         productLimit: 1,
         ragLimit: 1,
         status: 'active',
-      });
-
-      // Initialize Empty User Settings Row
-      await db.insert(userSettings).values({
-        userId: user.id!,
-        tone: 'authoritative',
       });
     }
   },
