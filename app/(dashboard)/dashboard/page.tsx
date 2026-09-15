@@ -16,23 +16,25 @@ export default async function ProductDashboardPage({
   const session = await auth();
   const orgId = session!.user.organizationId!;
 
+
   const userProducts = await db
     .select()
     .from(products)
     .where(eq(products.organizationId, orgId));
+  
 
   const active =
     userProducts.find((p) => p.id === params.productId) || userProducts[0];
 
   const showAddProduct = params.addProduct === 'true';
 
-  if (active === undefined && showAddProduct) {
-    return <ProductAddModalGate open={true} />;
+  if (active === undefined) {
+    return <ProductAddModalGate open={showAddProduct} closeHref="/dashboard" />;
   }
-  console.log(active);
+
   return (
     <>
-      {/* <div className="p-10 max-w-3xl">
+      <div className="p-10 max-w-3xl">
         <h1 className="text-2xl font-bold mb-2">{active.name}</h1>
         <p className="text-gray-500 mb-8">{active.description}</p>
 
@@ -41,7 +43,7 @@ export default async function ProductDashboardPage({
         </p>
         <ProductEditor product={active} />
       </div>
-      {showAddProduct && <ProductAddModalGate open={showAddProduct} closeHref="/dashboard" />} */}
+      {showAddProduct && <ProductAddModalGate open={showAddProduct} closeHref="/dashboard" />}
     </>
   );
 }
