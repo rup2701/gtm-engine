@@ -294,7 +294,7 @@ export default function StagingPage() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold text-gray-900">Content Calendar</h1>
-          <span className="text-[12px] bg-[#d4f2e9] md:text-sm text-gray-700 font-mono bg-white px-3 py-1 rounded-full border">
+          <span className="text-[12px] bg-[var(--brand-soft)] md:text-sm text-gray-700 font-mono  px-3 py-1 rounded-full border">
             {getWeekRange(weekOffset)}
           </span>
           {isPastWeek(weekOffset) && (
@@ -332,32 +332,6 @@ export default function StagingPage() {
           </button>
 
           <div className="w-px h-8 bg-gray-300 mx-2" />
-
-          <button
-            onClick={() => handleRegenerate(false)}
-            disabled={isPastWeek(weekOffset)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition ${
-              isPastWeek(weekOffset)
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-black text-white hover:bg-gray-900'
-            }`}
-          >
-            <RefreshCw className="w-4 h-4" />
-            Regenerate
-          </button>
-
-          <button
-            onClick={() => handleRegenerate(true)}
-            disabled={isPastWeek(weekOffset)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition ${
-              isPastWeek(weekOffset)
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-black text-white hover:bg-gray-900'
-            }`}
-          >
-            <RefreshCw className="w-4 h-4" />
-            Rescrape
-          </button>
 
           <button
             onClick={handleQueueAll}
