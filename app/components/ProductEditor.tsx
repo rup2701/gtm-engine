@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { updateProduct } from '../(dashboard)/dashboard/action';
 import EditableField from './ui/EditableField';
 import PillEditor from './PillEditor';
+import ConstrainedPillEditor from './ConstrainedPillEditor';
 
 type Product = {
   id: string;
@@ -76,11 +77,11 @@ export default function ProductEditor({ product }: { product: Product }) {
         onSave={(next) => save({ categories: JSON.stringify(next) })}
       />
 
-      <PillEditor
-        label="Channels"
+      <ConstrainedPillEditor
+        label="Platforms"
         values={platforms}
+        options={['twitter', 'linkedin', 'reddit', 'bluesky']}
         onSave={(next) => save({ platforms: JSON.stringify(next) })}
-        sanitize={(v) => v.trim().toLowerCase()}
       />
 
       <PillEditor
