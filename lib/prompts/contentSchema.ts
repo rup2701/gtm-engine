@@ -5,7 +5,11 @@ export const contentResponseSchema = {
   items: {
     type: Type.OBJECT,
     properties: {
-      day: { type: Type.STRING, description: 'Monday, Tuesday, etc.' },
+      // 🎯 FIX: Force Gemini to output lowercase 3-letter tokens instead of full string names
+      day: { 
+        type: Type.STRING, 
+        description: "Must be lowercase 3-letter weekday abbreviation only: 'mon', 'tue', 'wed', 'thu', or 'fri'" 
+      },
       time: {
         type: Type.STRING,
         description: "24-hour format without timezone, e.g. '09:00'",

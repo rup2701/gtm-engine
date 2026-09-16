@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
-import { products, scrapedContent } from '@/db/schema';
+import { organizations, products, scrapedContent } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function POST(req: Request) {
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const {
       brandName, description, icp, tone, categories, url,
-      frequency, times, channels, autoPublish = true, rawText,
+      frequency, times, channels, autoPublish = true, rawText, timezone
     } = body;
 
     if (!brandName || !Array.isArray(times) || !Array.isArray(channels)) {
@@ -24,9 +24,13 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
+    // Save the timezone string to the user's organization row
+    const orgId = session!.user.organizationId!;
+    await db.update(organizations)
+      .set({ timezone: timezone })
+      .where(eq(organizations.id, orgId));
 
     const productId = crypto.randomUUID();
-
     await db.insert(products).values({
       id: productId,
       website: url,

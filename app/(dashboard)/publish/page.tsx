@@ -4,6 +4,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, RefreshCw, Edit, Send } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
+import { getDefaultOffset, getMondayDate, isPastWeek, getMaxForwardOffset, getCalendarWeekKey } from '@/lib/date-utils';
+import { isToday } from 'date-fns';
 
 type Post = {
   id: string;
@@ -22,6 +24,7 @@ type WeekData = {
   posts: Post[];
   groupedByDay: Record<string, Post[]>;
   total: number;
+  userTimeZone: string;
   stats: {
     queued: number;
     hold: number;
@@ -43,62 +46,15 @@ const PLATFORM_LABELS = {
   reddit: 'Reddit',
 };
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const DAYS = ["mon", "tue", "wed", "thu", "fri"];
 
-// ─── Date Utilities ───────────────────────────────────────────────
-
-// ISO Week calculation for calendar viewing (not content generation)
-function getCalendarWeekKey(date: Date): string {
-  const year = date.getFullYear();
-  const jan4 = new Date(year, 0, 4);
-  const jan4Day = (jan4.getDay() + 6) % 7;
-  const firstMonday = new Date(jan4);
-  firstMonday.setDate(jan4.getDate() - jan4Day);
-
-  const diffDays = (date.getTime() - firstMonday.getTime()) / 86400000;
-  const week = Math.floor(diffDays / 7) + 1;
-
-  return `${year}-W${String(week).padStart(2, '0')}`;
-}
-
-// Get the Monday of the week for a given offset
-function getMondayDate(offset: number): Date {
-  const now = new Date();
-  const day = now.getDay();
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(now);
-  monday.setDate(diff + offset * 7);
-  monday.setHours(0, 0, 0, 0);
-  return monday;
-}
-
-// Default offset: weekends → next week, weekdays → current week
-function getDefaultOffset(): number {
-  const today = new Date().getDay(); // 0 = Sunday, 6 = Saturday
-  const isWeekend = today === 0 || today === 6;
-  return isWeekend ? 1 : 0;
-}
-
-// Max forward offset: weekends → 1 (next week), weekdays → 0 (current)
-function getMaxForwardOffset(): number {
-  const today = new Date().getDay();
-  const isWeekend = today === 0 || today === 6;
-  return isWeekend ? 1 : 0;
-}
-
-// Check if a week is in the past
-function isPastWeek(offset: number): boolean {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const targetMonday = getMondayDate(offset);
-  return targetMonday < today;
-}
-
-// Check if a date is today
-function isToday(date: Date): boolean {
-  const today = new Date();
-  return date.toDateString() === today.toDateString();
-}
+const displayNames: Record<string, string> = {
+  mon: "Monday",
+  tue: "Tuesday",
+  wed: "Wednesday",
+  thu: "Thursday",
+  fri: "Friday"
+};
 
 // ─── Component ────────────────────────────────────────────────────
 
@@ -130,6 +86,7 @@ export default function StagingPage() {
   const getWeekKey = (offset: number) => {
     const monday = getMondayDate(offset);
     return getCalendarWeekKey(monday);
+    // return '2026-W38'
   };
 
   const getWeekRange = (offset: number) => {
@@ -146,6 +103,7 @@ export default function StagingPage() {
 
   const fetchWeekData = async (offset: number, currentProductId?: string | null) => {
     const url = new URL('/api/posts', window.location.origin);
+    // url.searchParams.set('weekKey', getWeekKey(offset));
     url.searchParams.set('weekKey', getWeekKey(offset));
     console.log('Fetching week data for weekKey:', getWeekKey(offset), 'and productId:', currentProductId);
     if (currentProductId) {
@@ -175,6 +133,7 @@ export default function StagingPage() {
       }
 
       setWeekData(data);
+      // console.log('WeekData', weekData);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch posts';
       console.error('Failed to fetch posts:', error);
@@ -392,7 +351,7 @@ export default function StagingPage() {
                     isToday(dayDate) ? 'bg-[var(--brand-soft)] border-[var(--brand)]' : 'bg-gray-50'
                   }`}
                 >
-                  <div className="font-semibold text-gray-900">{day}</div>
+                  <div className="font-semibold text-gray-900">{displayNames[day]}</div>
                   <div
                     className={`text-sm ${
                       isToday(dayDate) ? 'font-black tracking-tight text-[var(--brand-hover)]' : 'text-gray-500'
@@ -410,191 +369,195 @@ export default function StagingPage() {
                   {posts.length === 0 ? (
                     <div className="text-center text-gray-400 text-sm py-8">No posts</div>
                   ) : (
-                    posts.map((post) => {
-                      const displayContent = post.editedContent || post.content;
-                      const preview =
-                        displayContent.length > 60
-                          ? displayContent.slice(0, 60) + '...'
-                          : displayContent;
-                      const isManualPlatform = post.platform === 'reddit';
+                      posts.map((post) => {
+                        
+                        const orgTimeZone = weekData.userTimeZone;
+                        const displayContent = post.editedContent || post.content;
+                        const preview =
+                          displayContent.length > 60
+                            ? displayContent.slice(0, 60) + '...'
+                            : displayContent;
+                        const isManualPlatform = post.platform === 'reddit';
 
-                      // 1. Force the ISO string representation
-                      const dateString = String(post.scheduledAt);
+                        // 1. Force the ISO string representation
+                        const dateString = String(post.scheduledAt);
 
-                      // 2. Pass it directly to Date.parse() or new Date().getTime() 
-                      // Valid ISO strings ending in "Z" automatically force UTC synchronization
-                      const scheduled = new Date(dateString).getTime();
-                      const now = Date.now(); // Always pure UTC millisecond timestamp
+                        // 2. Pass it directly to Date.parse() or new Date().getTime() 
+                        // Valid ISO strings ending in "Z" automatically force UTC synchronization
+                        const scheduled = new Date(dateString).getTime();
+                        const now = Date.now(); // Always pure UTC millisecond timestamp
 
-                      // 3. Log the EXACT difference to see the calculation error live
+                        // 3. Log the EXACT difference to see the calculation error live
             
-                      const isPast = !isNaN(scheduled) && scheduled <= now;
+                        const isPast = !isNaN(scheduled) && scheduled <= now;
 
-                      return (
-                        <div
-                          key={post.id}
-                          onMouseEnter={() => showPostDetails(post.id)}
-                          onMouseLeave={hidePostDetails}
-                          className={`relative p-3 rounded-lg border transition-all ${
-                            post.status === 'dropped'
-                              ? 'opacity-50 bg-gray-50'
-                              : post.status === 'published'
-                              ? 'bg-[var(--brand-soft)] border-[var(--brand)]'
-                              : isManualPlatform
-                              ? 'bg-amber-50 border-amber-200 hover:shadow-md'
-                              : 'bg-white hover:shadow-md'
-                          }`}
-                        >
-                          {hoveredPost === post.id && (
-                            <div
-                              role="tooltip"
-                              className="absolute left-0 top-full z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-lg border border-gray-200 bg-[#f8f8f8] p-4 text-left shadow-xl"
-                            >
-                              <div className="mb-2 flex items-center justify-between gap-3 border-b border-gray-100 pb-2">
-                                <span className="font-semibold text-gray-900">
-                                  {PLATFORM_LABELS[post.platform]} post
-                                </span>
-                                <span className="text-xs capitalize text-gray-500">
-                                  {post.status}
-                                </span>
-                              </div>
-                              <p className="whitespace-pre-wrap text-[17px] leading-6 text-gray-700">
-                                {displayContent}
-                              </p>
-                              <div className="mt-3 text-xs text-gray-500">
-                                {new Date(post.scheduledAt).toLocaleString()} · {post.category}
-                              </div>
-                            </div>
-                          )}
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 text-sm flex-wrap">
-                                <span className="font-medium text-gray-900">
-                                  {new Date(post.scheduledAt).toLocaleTimeString(
-                                    'en-US',
-                                    { hour: '2-digit', minute: '2-digit' }
-                                  )}
-                                </span>
-                                <span className="text-gray-400">•</span>
-                                <span className="text-gray-600">
-                                  {PLATFORM_ICONS[post.platform]}{' '}
-                                  {PLATFORM_LABELS[post.platform]}
-                                </span>
-                                {isManualPlatform && (
-                                  <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded">
-                                    Manual action
-                                  </span>
-                                )}
-                                <span className="text-gray-400">•</span>
-                                <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
-                                  {post.category}
-                                </span>
-                              </div>
-                              <p className="text-sm text-gray-700 mt-1 line-clamp-2">
-                                {preview}
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => {
-                                setSelectedPost(post);
-                                setEditContent(post.editedContent || post.content);
-                                setIsEditing(true);
-                              }}
-                              className="p-1 hover:bg-gray-100 rounded transition ml-2 flex-shrink-0"
-                              title="Edit"
-                            >
-                              <Edit className="w-4 h-4 text-gray-500" />
-                            </button>
-                          </div>
-
-                          {/* Actions */}
-                          <div className="flex flex-wrap items-center gap-1 mt-2">
-                            {post.status === 'draft' && (
-                              <>
-                                <button
-                                  onClick={() => updatePostStatus(post.id, 'queued')}
-                                  className="text-xs px-2 py-1 bg-[var(--brand-tint)] text-[var(--brand-hover)] rounded hover:bg-[var(--brand-tint-hover)] transition"
-                                >
-                                  ✅ Queue
-                                </button>
-                                <button
-                                  onClick={() => updatePostStatus(post.id, 'hold')}
-                                  className="text-xs px-2 py-1 bg-amber-50 text-amber-700 rounded hover:bg-amber-100 transition"
-                                >
-                                  ⏸ Hold
-                                </button>
-                              </>
-                            )}
-
-                            {post.status === 'queued' && (
-                              <>
-                                <span className="text-xs px-2 py-1 bg-[var(--brand-tint)] text-[var(--brand-hover)] rounded">
-                                  ✅ Queued
-                                </span>
-                                <button
-                                  onClick={() => updatePostStatus(post.id, 'hold')}
-                                  className="text-xs px-2 py-1 bg-amber-50 text-amber-700 rounded hover:bg-amber-100 transition"
-                                >
-                                  ⏸ Hold
-                                </button>
-                                <button
-                                  onClick={() => updatePostStatus(post.id, 'dropped')}
-                                  className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100 transition"
-                                >
-                                  ❌ Drop
-                                </button>
-                                {!isManualPlatform && isPast && (
-                                  <button
-                                    onClick={() => handleFireNow(post.id)}
-                                    className="text-xs px-2 py-1 bg-[var(--brand-soft)] text-[var(--brand-hover)] rounded hover:bg-[var(--brand-tint-hover)] transition"
-                                  >
-                                    <Send className="w-3 h-3 inline" /> Fire Now
-                                  </button>
-                                )}
-                              </>
-                            )}
-
-                            {post.status === 'hold' && (
-                              <>
-                                <button
-                                  onClick={() => updatePostStatus(post.id, 'queued')}
-                                  className="text-xs px-2 py-1 bg-[var(--brand-tint)] text-[var(--brand-hover)] rounded hover:bg-[var(--brand-tint-hover)] transition"
-                                >
-                                  ✅ Queue
-                                </button>
-                                <button
-                                  onClick={() => updatePostStatus(post.id, 'dropped')}
-                                  className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100 transition"
-                                >
-                                  ❌ Drop
-                                </button>
-                              </>
-                            )}
-
-                            {post.status === 'published' && (
-                              <span className="text-xs px-2 py-1 bg-[var(--brand-soft)] text-[var(--brand-hover)] rounded">
-                                📤 Published
-                              </span>
-                            )}
-
-                            {post.status === 'failed' && (
-                              <span className="text-xs px-2 py-1 bg-rose-50 text-rose-700 rounded">
-                                ⚠️ Failed
-                              </span>
-                            )}
-
-                            {post.editedContent && post.status !== 'dropped' && (
-                              <span
-                                className="text-xs px-2 py-1 bg-purple-50 text-purple-600 rounded"
-                                title="Edited"
+                        return (
+                          <div
+                            key={post.id}
+                            onMouseEnter={() => showPostDetails(post.id)}
+                            onMouseLeave={hidePostDetails}
+                            className={`relative p-3 rounded-lg border transition-all ${
+                              post.status === 'dropped'
+                                ? 'opacity-50 bg-gray-50'
+                                : post.status === 'published'
+                                ? 'bg-[var(--brand-soft)] border-[var(--brand)]'
+                                : isManualPlatform
+                                ? 'bg-amber-50 border-amber-200 hover:shadow-md'
+                                : 'bg-white hover:shadow-md'
+                            }`}
+                          >
+                            {hoveredPost === post.id && (
+                              <div
+                                role="tooltip"
+                                className="absolute left-0 top-full z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-lg border border-gray-200 bg-[#f8f8f8] p-4 text-left shadow-xl"
                               >
-                                ✏️
-                              </span>
+                                <div className="mb-2 flex items-center justify-between gap-3 border-b border-gray-100 pb-2">
+                                  <span className="font-semibold text-gray-900">
+                                    {PLATFORM_LABELS[post.platform]} post
+                                  </span>
+                                  <span className="text-xs capitalize text-gray-500">
+                                    {post.status}
+                                  </span>
+                                </div>
+                                <p className="whitespace-pre-wrap text-[17px] leading-6 text-gray-700">
+                                  {displayContent}
+                                </p>
+                                <div className="mt-3 text-xs text-gray-500">
+                                  {new Date(post.scheduledAt).toLocaleString()} · {post.category}
+                                </div>
+                              </div>
                             )}
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 text-sm flex-wrap">
+                                  <span className="font-medium text-gray-900">
+                                  {new Date(post.scheduledAt).toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    timeZone: orgTimeZone || 'America/Los_Angeles' // 🎯 FORCE browser to lock to workspace location
+                                  })}
+                                </span>
+
+                                  <span className="text-gray-400">•</span>
+                                  <span className="text-gray-600">
+                                    {PLATFORM_ICONS[post.platform]}{' '}
+                                    {PLATFORM_LABELS[post.platform]}
+                                  </span>
+                                  {isManualPlatform && (
+                                    <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded">
+                                      Manual action
+                                    </span>
+                                  )}
+                                  <span className="text-gray-400">•</span>
+                                  <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
+                                    {post.category}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-700 mt-1 line-clamp-2">
+                                  {preview}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setSelectedPost(post);
+                                  setEditContent(post.editedContent || post.content);
+                                  setIsEditing(true);
+                                }}
+                                className="p-1 hover:bg-gray-100 rounded transition ml-2 flex-shrink-0"
+                                title="Edit"
+                              >
+                                <Edit className="w-4 h-4 text-gray-500" />
+                              </button>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex flex-wrap items-center gap-1 mt-2">
+                              {post.status === 'draft' && (
+                                <>
+                                  <button
+                                    onClick={() => updatePostStatus(post.id, 'queued')}
+                                    className="text-xs px-2 py-1 bg-[var(--brand-tint)] text-[var(--brand-hover)] rounded hover:bg-[var(--brand-tint-hover)] transition"
+                                  >
+                                    ✅ Queue
+                                  </button>
+                                  <button
+                                    onClick={() => updatePostStatus(post.id, 'hold')}
+                                    className="text-xs px-2 py-1 bg-amber-50 text-amber-700 rounded hover:bg-amber-100 transition"
+                                  >
+                                    ⏸ Hold
+                                  </button>
+                                </>
+                              )}
+
+                              {post.status === 'queued' && (
+                                <>
+                                  <span className="text-xs px-2 py-1 bg-[var(--brand-tint)] text-[var(--brand-hover)] rounded">
+                                    ✅ Queued
+                                  </span>
+                                  <button
+                                    onClick={() => updatePostStatus(post.id, 'hold')}
+                                    className="text-xs px-2 py-1 bg-amber-50 text-amber-700 rounded hover:bg-amber-100 transition"
+                                  >
+                                    ⏸ Hold
+                                  </button>
+                                  <button
+                                    onClick={() => updatePostStatus(post.id, 'dropped')}
+                                    className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100 transition"
+                                  >
+                                    ❌ Drop
+                                  </button>
+                                  {!isManualPlatform && isPast && (
+                                    <button
+                                      onClick={() => handleFireNow(post.id)}
+                                      className="text-xs px-2 py-1 bg-[var(--brand-soft)] text-[var(--brand-hover)] rounded hover:bg-[var(--brand-tint-hover)] transition"
+                                    >
+                                      <Send className="w-3 h-3 inline" /> Fire Now
+                                    </button>
+                                  )}
+                                </>
+                              )}
+
+                              {post.status === 'hold' && (
+                                <>
+                                  <button
+                                    onClick={() => updatePostStatus(post.id, 'queued')}
+                                    className="text-xs px-2 py-1 bg-[var(--brand-tint)] text-[var(--brand-hover)] rounded hover:bg-[var(--brand-tint-hover)] transition"
+                                  >
+                                    ✅ Queue
+                                  </button>
+                                  <button
+                                    onClick={() => updatePostStatus(post.id, 'dropped')}
+                                    className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100 transition"
+                                  >
+                                    ❌ Drop
+                                  </button>
+                                </>
+                              )}
+
+                              {post.status === 'published' && (
+                                <span className="text-xs px-2 py-1 bg-[var(--brand-soft)] text-[var(--brand-hover)] rounded">
+                                  📤 Published
+                                </span>
+                              )}
+
+                              {post.status === 'failed' && (
+                                <span className="text-xs px-2 py-1 bg-rose-50 text-rose-700 rounded">
+                                  ⚠️ Failed
+                                </span>
+                              )}
+
+                              {post.editedContent && post.status !== 'dropped' && (
+                                <span
+                                  className="text-xs px-2 py-1 bg-purple-50 text-purple-600 rounded"
+                                  title="Edited"
+                                >
+                                  ✏️
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })
+                        );
+                    })  
                   )}
                 </div>
               </div>

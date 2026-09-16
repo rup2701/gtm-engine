@@ -161,3 +161,8 @@ export async function getCurrentUserId() {
   const session = await auth();
   return session?.user?.id ?? null;
 }
+
+export async function getCurrentOrgId() {
+  const session = await auth();
+  return session?.user?.organiszationId ?? null;
+}

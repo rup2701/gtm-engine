@@ -3,24 +3,27 @@ import { v4 as uuidv4 } from 'uuid';
 
 import 'dotenv/config'; // Ensure environment variables are loaded
 import { GoogleGenAI } from '@google/genai';
-import { batches, posts, scrapedContent, products } from '@/db/schema';
+import { batches, posts, scrapedContent, products, organizations } from '@/db/schema';
 import { db } from '@/db';
 import crypto from 'crypto';
 import { getNextWeekDate, getWeekIdentifier } from '@/lib/date-utils';
 
 import { eq, and } from 'drizzle-orm';
-import { getCurrentUserId } from '@/lib/auth';
+import { getCurrentUserId, getCurrentOrgId } from '@/lib/auth';
 import { buildContentPrompt } from '@/lib/prompts/buildContentPrompt';
 import { contentResponseSchema } from '@/lib/prompts/contentSchema';
+import { calculateGlobalPostSchedule } from '@/lib/date-utils';
 
 // const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-type GeneratedPost = {
+// Update your interface to match your strict schema parameters
+interface GeneratedPost {
+  day: "mon" | "tue" | "wed" | "thu" | "fri"; // 🎯 Change from string to this
+  time: string;
   category: string;
   platform: string;
   content: string;
-  day: string;
-  time: string;
+  hook?: string;
 }
 
 export async function POST(req: Request) {
@@ -37,11 +40,13 @@ export async function POST(req: Request) {
     // const weeksToGenerate = body.weeks ?? 1;
 
     const { productId } = await req.json();
-    if (!productId) {
-      return NextResponse.json({ error: 'productId required' }, { status: 400 });
+    
+
+    if (!productId ) {
+      return NextResponse.json({ error: 'productId  required' }, { status: 400 });
     }
     console.log(`Generating content for productId: ${productId} by userId: ${userId}`);
-    
+
     // 1. Fetch product
     const [product] = await db
       .select()
@@ -54,6 +59,16 @@ export async function POST(req: Request) {
     }
 
     console.log(`Product found: ${product.name} (${product.id})`);
+
+    const orgId = await getCurrentOrgId();
+    const [orgRow] = await db
+      .select({ timezone: organizations.timezone }) // Use standard drizzle selection syntax
+      .from(organizations)
+      .where(eq(organizations.id, orgId))
+      .limit(1);
+
+    const userTimeZone = orgRow?.timezone || 'UTC';
+
 
     // 2. Fetch scraped content
     const scraped = await db
@@ -92,17 +107,18 @@ export async function POST(req: Request) {
       )
       .limit(1);
 
-    if (existingBatch) {
-      return NextResponse.json({
-        success: false,
-        message: 'Batch already exists for this week.',
-        batchId: existingBatch.batchId,
-      }, { status: 200 }); // ← 200 OK so frontend can handle gracefully
+    // if (existingBatch) {
+    //   console.log('Batch already exists for this week.');
+    //   return NextResponse.json({
+    //     success: false,
+    //     message: 'Batch already exists for this week.',
+    //     batchId: existingBatch.batchId,
+    //   }, { status: 200 }); // ← 200 OK so frontend can handle gracefully
 
-        // Option B: Force regenerate by deleting old batch
-        // await db.delete(posts).where(eq(posts.batchId, existingBatch.batchId));
-        // Then continue to create new batch
-    }
+    //     // Option B: Force regenerate by deleting old batch
+    //     // await db.delete(posts).where(eq(posts.batchId, existingBatch.batchId));
+    //     // Then continue to create new batch
+    // }
 
   
     const times = product
@@ -173,7 +189,7 @@ export async function POST(req: Request) {
     // 5. Parse and save generated posts
     const genPosts = JSON.parse(text);
     const batchId = uuidv4(); // Unique batch identifier for this generation
-    console.log('Generated posts:', genPosts[0]); // Log the first post for debugging
+    console.log('Generated posts:', genPosts); // Log the first post for debugging
 
     await db.insert(batches).values({
       id: batchId,
@@ -186,35 +202,67 @@ export async function POST(req: Request) {
 
     
     // Inside your API route
-    const savedPosts = await db.insert(posts).values(
-      genPosts.map((post: GeneratedPost) => ({
-        userId,
-        productId,
-        batchId: batchId,
-        weekKey: weekKey,
-        dayOfWeek: post.day, 
-        contextHash: contextHash,
-        category: post.category,
-        platform: post.platform,
-        content: post.content,
-        status: 'draft',
-        scheduledAt: new Date(`${getNextWeekDate(post.day)}T${post.time}`),
-        day: post.day,
-        time: post.time,
-        editedContent: null,
-        publishedAt: null,
-        analytics: {},
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }))
-    ).returning() as unknown[]; // ← returns saved posts with IDs
+    // 5. Parse and save generated posts
+    // inside your /api/generate route endpoint handler...
 
-    return NextResponse.json({
-      success: true,
-      batchId: batchId,
-      postCount: savedPosts.length,
-      message: `${savedPosts.length} posts staged for review.`
-    });
+    const savedPostsData = genPosts
+      .map((post: GeneratedPost) => {
+        // 1. Compute the timezone-aware target execution date
+        const { scheduledAt, weekKey: computedWeekKey } = calculateGlobalPostSchedule(
+          post.day, // 'mon'
+          post.time, // '11:00'
+          userTimeZone
+        );
+
+        // 2. 🛡️ THE GUARDRAIL CHECK: Compare the target execution timestamp against the current server time instant
+        const isPastSlot = scheduledAt.getTime() <= Date.now();
+
+        if (isPastSlot) {
+          console.log(`[Guardrail Log] Skipped generating post for ${post.day} at ${post.time} because it falls in the past.`);
+          return null; // Return null so we can filter it out of the insert array
+        }
+
+        // Otherwise, it's a valid upcoming slot! Return the database insertion layout object
+        return {
+          userId,
+          productId,
+          batchId: batchId,
+          scheduledAt,       
+          weekKey: computedWeekKey, 
+          dayOfWeek: post.day, 
+          contextHash: contextHash,
+          category: post.category,
+          platform: post.platform,
+          content: post.content,
+          status: 'draft',
+          editedContent: null,
+          publishedAt: null,
+          analytics: {},
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      })
+      .filter(Boolean); // 🎯 Cleanly strips out all the 'null' entries from past slots
+
+    // 3. Only attempt a database write if there are future slots left to save
+    if (savedPostsData.length > 0) {
+      const savedPosts = await db
+        .insert(posts)
+        .values(savedPostsData)
+        .returning();
+      
+        return NextResponse.json({
+          success: true,
+          batchId: batchId,
+          postCount: savedPosts.length,
+          message: `${savedPosts.length} posts staged for review.`
+        });
+    } else {
+      console.log("No new future slots available for generation in this week block.");
+    }
+
+
+
   } catch (error) {
     console.error('Content Calendar Generation Failed:', error);
 

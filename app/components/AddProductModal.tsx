@@ -100,12 +100,16 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
     setLoading(true);
     try {
       // 1. Save product
+      // 🎯 Detect the exact user timezone automatically
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone; 
+      // Output Examples: "Asia/Kolkata", "America/Los_Angeles", "Europe/London"
+
       const saveRes = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           brandName, description, icp, tone, categories, url,
-          frequency, times, channels, rawText,
+          frequency, times, channels, rawText, timeZone
         }),
       });
       const { productId } = await saveRes.json();

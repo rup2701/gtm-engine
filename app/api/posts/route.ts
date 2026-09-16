@@ -1,9 +1,9 @@
 // app/api/posts/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { posts } from '@/db/schema';
+import { organizations, posts } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
-import { getCurrentUserId } from '@/lib/auth';
+import { getCurrentOrgId, getCurrentUserId } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   const userId = await getCurrentUserId();
@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const productId = searchParams.get('productId');
   const weekKey = searchParams.get('weekKey'); // "2026-W36"
-  const batchId = searchParams.get('batchId');
+  // const batchId = searchParams.get('batchId');
+  const batchId = 'c60fb074-1312-4278-8b6f-8418b09c3dd3';
 
   if (!productId) {
     return NextResponse.json({ error: 'productId required' }, { status: 400 });
@@ -46,11 +47,23 @@ export async function GET(request: NextRequest) {
       return acc;
     }, {} as Record<string, typeof results>);
 
+    const orgId = await getCurrentOrgId();
+
+    // 1. Grab the organization timezone row
+    const [orgRow] = await db
+      .select({ timezone: organizations.timezone })
+      .from(organizations)
+      .where(eq(organizations.id, orgId))
+      .limit(1);
+
+    const userTimeZone = orgRow?.timezone || 'America/Los_Angeles';
+
     return NextResponse.json({
       success: true,
       posts: results,
       groupedByDay,
       total: results.length,
+      userTimeZone,
       stats: {
         queued: results.filter(p => p.status === 'queued').length,
         hold: results.filter(p => p.status === 'hold').length,

@@ -85,7 +85,8 @@ export const posts = pgTable('posts', {
   productId: uuid('product_id').references(() => products.id).notNull(),
   batchId: uuid('batch_id').references(() => batches.id).notNull(),
   
-  scheduledAt: timestamp('scheduled_at').notNull(),
+  // 🎯 FIX: Force Drizzle and PostgreSQL to explicitly store the timezone offset
+  scheduledAt: timestamp('scheduled_at', { withTimezone: true }).notNull(),
   dayOfWeek: varchar('day_of_week', { length: 10 }).notNull(),
   
   platform: varchar('platform', { length: 50 }).notNull(),
@@ -130,6 +131,7 @@ export const organizations = pgTable('organizations', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: varchar('name', { length: 100 }).notNull(),
   slug: varchar('slug', { length: 100 }).notNull().unique(),
+  timezone: varchar('timezone', { length: 100 }).default('UTC').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
