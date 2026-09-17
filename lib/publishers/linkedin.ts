@@ -62,6 +62,9 @@ export async function publishToLinkedIn(
   return {
     success: true,
     url: `https://linkedin.com/feed/update/${data.id}`,
-    analytics: { postId: data.id, linkedinPersonId: resolvedPersonId },
+    analytics: {
+      postId: data.id,
+      linkedinPersonId: resolvedPersonId
+    },
   };
 }

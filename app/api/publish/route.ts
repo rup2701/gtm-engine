@@ -43,8 +43,7 @@ export async function POST(request: NextRequest) {
 
     // 4. Publish to the right platform
     let result;
-    const platform = post.platform.toLowerCase();
-    console.log(`Publishing post ${postId} to ${platform}...`);
+    
     switch (post.platform) {
       case 'twitter':
         if (!settings.twitterAccessToken) {
@@ -52,7 +51,6 @@ export async function POST(request: NextRequest) {
         }
         result = await publishToTwitter(content, settings.twitterAccessToken);
         break;
-
       case 'linkedin': { // Added block scope curly braces to safely contain block-scoped variables
         const [linkedinAccount] = await db
           .select()
@@ -77,7 +75,8 @@ export async function POST(request: NextRequest) {
         );
 
         // Fallback: If for some reason providerAccountId was missing, update the ACCOUNTS table, not userSettings
-        if (!linkedinAccount.providerAccountId && result?.analytics?.linkedinPersonId) {
+        if (!linkedinAccount.providerAccountId &&
+            result?.analytics?.linkedinPersonId) {
           await db
             .update(accounts)
             .set({ providerAccountId: result.analytics.linkedinPersonId })
@@ -89,14 +88,11 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        console.log('LinkedIn publish result:', result);
+        // console.log('LinkedIn publish result:', result);
         break;
       }
-
-
       case 'reddit':
         // throw new Error('Reddit publishing not implemented yet');
-
       default:
         throw new Error(`Unknown platform: ${post.platform}`);
     }
@@ -107,15 +103,15 @@ export async function POST(request: NextRequest) {
         status: 'published',
         publishedAt: new Date(),
         // analytics: result.analytics || {},
-        updatedAt: new Date(),
+        // updatedAt: new Date(),
       })
-      .where(and(eq(posts.id, postId), eq(posts.userId, userId)));
+      .where(eq(posts.id, postId));
 
     return NextResponse.json({
       success: true,
       postId: post.id,
       platform: post.platform,
-      // url: result.url,
+      url: result.url,
     });
 
   } catch (error) {
