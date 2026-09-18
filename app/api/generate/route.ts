@@ -189,7 +189,7 @@ export async function POST(req: Request) {
     // 5. Parse and save generated posts
     const genPosts = JSON.parse(text);
     const batchId = uuidv4(); // Unique batch identifier for this generation
-    console.log('Generated posts:', genPosts); // Log the first post for debugging
+    // console.log('Generated posts:', genPosts); // Log the first post for debugging
 
     await db.insert(batches).values({
       id: batchId,

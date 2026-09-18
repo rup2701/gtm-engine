@@ -470,9 +470,29 @@ export default function StagingPage() {
                               </button>
                             </div>
 
+
                             {/* Actions */}
                             <div className="flex flex-wrap items-center gap-1 mt-2">
                               {post.status === 'draft' && (
+                                <>
+                                  <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
+                                    📝 Draft
+                                  </span>
+                                  <button
+                                    onClick={() => updatePostStatus(post.id, 'queued')}
+                                    className="text-xs px-2 py-1 bg-[var(--brand-tint)] text-[var(--brand-hover)] rounded hover:bg-[var(--brand-tint-hover)] transition"
+                                  >
+                                    ✅ Queue
+                                  </button>
+                                  <button
+                                    onClick={() => updatePostStatus(post.id, 'dropped')}
+                                    className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100 transition"
+                                  >
+                                    ❌ Drop
+                                  </button>
+                                </>
+                              )}
+                              {post.status === 'queued' && (
                                 <>
                                   <span className="text-xs px-2 py-1 bg-[var(--brand-tint)] text-[var(--brand-hover)] rounded">
                                     ✅ Queued
