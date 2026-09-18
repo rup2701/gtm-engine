@@ -2,9 +2,10 @@ import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import LinkedIn from 'next-auth/providers/linkedin';
 import Google from 'next-auth/providers/google';
+import TwitterProvider from 'next-auth/providers/twitter';
 import bcrypt from 'bcryptjs';
 import { db } from '@/db';
-import { users, organizations, subscriptions, userSettings, accounts, sessions, verificationTokens } from '@/db/schema';
+import { users, organizations, subscriptions, accounts, sessions, verificationTokens } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
 
@@ -36,6 +37,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         },
       },
     }),
+    TwitterProvider({
+      clientId: process.env.TWITTER_CLIENT_ID!,
+      clientSecret: process.env.TWITTER_CLIENT_SECRET!,
+      authorization: {
+        url: "https://twitter.com/i/oauth2/authorize",
+        params: {
+          scope: "tweet.read tweet.write users.read offline.access",
+        },
+      },
+    }),
+// ...existing code...
     Credentials({
       credentials: {
         email: { label: 'Email', type: 'email' },
@@ -164,5 +176,5 @@ export async function getCurrentUserId() {
 
 export async function getCurrentOrgId() {
   const session = await auth();
-  return session?.user?.organiszationId ?? null;
+  return session?.user?.organizationId ?? null;
 }

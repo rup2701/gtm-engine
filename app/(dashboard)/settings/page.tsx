@@ -30,20 +30,36 @@ export default async function SettingsPage() {
     ),
   });
 
+  const [twitterAccount] = await db
+    .select()
+    .from(accounts)
+    .where(
+      and(
+        eq(accounts.userId, session.user.id),
+        eq(accounts.provider, "twitter")
+      )
+    )
+    .limit(1);
+
   // Flag to pass to your Client Component button
   const isLinkedInConnected = !!linkedinAccount;
+  const isTwitterConnected = !!twitterAccount;
 
   return (
     <div className="p-8 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Account Settings</h1>
       
-      <div className="border p-4 rounded-lg bg-slate-50 dark:bg-zinc-900">
+      <div className="border p-4 rounded-lg">
         <h2 className="text-lg font-semibold mb-2">Integrations</h2>
         <p className="text-sm text-gray-500 mb-4">
           Connect your social accounts to unlock all app features.
         </p>
 
-        <IntegrationButtons isLinkedInConnected={isLinkedInConnected} />
+        <IntegrationButtons
+          isLinkedInConnected={isLinkedInConnected}
+          isTwitterConnected={isTwitterConnected}
+          isDiscordConnected={false}
+          isBlueSkyConnected={false} />
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { posts, userSettings, accounts } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { getCurrentUserId } from '@/lib/auth';
+import refreshTwitterToken from '@/lib/utils/refreshTwitterToken';
 import { publishToLinkedIn } from '@/lib/publishers/linkedin';
 import { publishToTwitter } from '@/lib/publishers/twitter';
 
@@ -44,13 +45,66 @@ export async function POST(request: NextRequest) {
     // 4. Publish to the right platform
     let result;
     
-    switch (post.platform) {
-      case 'twitter':
-        if (!settings.twitterAccessToken) {
-          throw new Error('Twitter token not configured');
+    switch (post.platform) {      
+
+      // 🎯 Inside your main publishing loop...
+      case 'twitter': {
+        // 1. Fetch the user's Twitter account configuration from Neon
+        const [twitterAccount] = await db
+          .select()
+          .from(accounts)
+          .where(
+            and(
+              eq(accounts.userId, post.userId),        // Target current post owner
+              eq(accounts.provider, "twitter")       // Target specific channel
+            )
+          )
+          .limit(1);
+
+        if (!twitterAccount || !twitterAccount.access_token) {
+          throw new Error('Twitter connection not found for this account.');
         }
-        result = await publishToTwitter(content, settings.twitterAccessToken);
+
+        let activeToken = twitterAccount.access_token;
+        const nowInSeconds = Math.floor(Date.now() / 1000);
+
+        // 🕒 NextAuth stores 'expires_at' as a Unix epoch timestamp (seconds)
+        const isExpired = twitterAccount.expires_at 
+          ? nowInSeconds >= (twitterAccount.expires_at - 120) // 2-minute safety margin
+          : true;
+
+        // 🔄 Handle sliding-window rotation if token is expired
+        if (isExpired && twitterAccount.refresh_token) {
+          console.log(`[Twitter Worker] Token expired or expiring soon. Refreshing...`);
+          
+          const newTokens = await refreshTwitterToken(twitterAccount.refresh_token);
+          
+          // Calculate new expiration epoch time
+          const newExpiresAt = Math.floor(Date.now() / 1000) + newTokens.expires_in;
+
+          // Update the record in Neon
+          await db
+            .update(accounts)
+            .set({
+              access_token: newTokens.access_token,
+              refresh_token: newTokens.refresh_token ?? twitterAccount.refresh_token, // Fallback if a new one isn't issued
+              expires_at: newExpiresAt,
+            })
+            .where(
+              and(
+                eq(accounts.userId, post.userId),
+                eq(accounts.provider, "twitter")
+              )
+            );
+
+          activeToken = newTokens.access_token;
+        }
+
+        // 🚀 Dispatch to X API
+        result = await publishToTwitter(content, activeToken);
         break;
+      }
+
       case 'linkedin': { // Added block scope curly braces to safely contain block-scoped variables
         const [linkedinAccount] = await db
           .select()

@@ -489,7 +489,7 @@ export default function StagingPage() {
                                 </>
                               )}
 
-                              {post.status === 'queued' && (
+                              {post.status === 'draft' && (
                                 <>
                                   <span className="text-xs px-2 py-1 bg-[var(--brand-tint)] text-[var(--brand-hover)] rounded">
                                     ✅ Queued

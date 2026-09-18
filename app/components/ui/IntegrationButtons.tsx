@@ -1,20 +1,31 @@
 'use client';
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, MouseEvent } from "react";
 import { signIn } from "next-auth/react";
 import { disconnectProvider } from "@/app/(dashboard)/settings/actions";
 
 
 interface IntegrationButtonsProps {
   isLinkedInConnected: boolean;
+  isTwitterConnected: boolean;
+  isDiscordConnected: boolean;
+  isBlueSkyConnected: boolean;
 }
 
-export default function IntegrationButtons({ isLinkedInConnected }: IntegrationButtonsProps) {
+export default function IntegrationButtons({ isLinkedInConnected, isTwitterConnected}: IntegrationButtonsProps) {
+  const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
   const [isPending, startTransition] = useTransition();
   
-  const handleConnectLinkedIn = () => {
-    signIn("linkedin", { callbackUrl: "/settings" });
+   const handleConnect = async (provider: string) => {
+    setLoadingProvider(provider);
+    try {
+      // 🚀 Direct trigger for NextAuth's authentication handlers
+      await signIn(provider, { callbackUrl: "/settings" });
+    } catch (error) {
+      console.error(`Error connecting to ${provider}:`, error);
+      setLoadingProvider(null);
+    }
   };
 
   const handleDisconnectLinkedIn = () => {
@@ -30,13 +41,26 @@ export default function IntegrationButtons({ isLinkedInConnected }: IntegrationB
     }
   };
 
+  const handleDisconnectTwitter = (): void => {
+    setLoadingProvider("twitter");
+    startTransition(async () => {
+      try {
+        await disconnectProvider("twitter");
+      } catch (error) {
+        alert("Failed to disconnect account. Please try again.");
+      } finally {
+        setLoadingProvider(null);
+      }
+    });
+  }
+
   return (
     <div className="flex flex-col gap-4 border-t pt-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-xl">💼</span>
+
           <div>
-            <p className="font-medium text-sm">LinkedIn Context</p>
+            <p className="font-medium text-lg">LinkedIn Profile</p>
             <p className="text-xs text-gray-400">
               {isLinkedInConnected ? "Connected and ready" : "Not connected"}
             </p>
@@ -46,15 +70,42 @@ export default function IntegrationButtons({ isLinkedInConnected }: IntegrationB
         {isLinkedInConnected ? (
           <button
             onClick={handleDisconnectLinkedIn}
-            disabled={isPending}
+            disabled={isPending || loadingProvider === "linkedin"}
             className="border border-red-200 text-red-600 hover:bg-red-50 text-xs px-3 py-1.5 rounded-md transition-colors disabled:opacity-50"
           >
             {isPending ? "Disconnecting..." : "Disconnect"}
           </button>
         ) : (
           <button
-            onClick={handleConnectLinkedIn}
+            onClick={() => handleConnect("linkedin")}
             className="bg-[#0077B5] hover:bg-[#006396] text-white text-xs px-3 py-1.5 rounded-md font-medium transition-colors"
+          >
+            Connect Account
+          </button>
+        )}
+      </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div>
+            <h4 className="font-medium">𝕏 Twitter Channel</h4>
+            <p className="text-xs text-gray-400">
+              {isTwitterConnected  ? "Connected and ready" : "Not connected"}
+            </p>
+          </div>
+        </div>
+
+        {isTwitterConnected ? (
+          <button
+            onClick={handleDisconnectTwitter}
+            disabled={isPending || loadingProvider === "twitter"}
+            className="border border-red-200 text-red-600 hover:bg-red-50 text-xs px-3 py-1.5 rounded-md transition-colors disabled:opacity-50"
+          >
+            {isPending ? "Disconnecting..." : "Disconnect"}
+          </button>
+        ) : (
+          <button
+            onClick={() => handleConnect("twitter")}
+            className="bg-[#1DA1F2] hover:bg-[#0d8ddb] text-white text-xs px-3 py-1.5 rounded-md font-medium transition-colors"
           >
             Connect Account
           </button>

@@ -25,14 +25,17 @@ export const accounts = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     type: text("type").$type<AdapterAccountType>().notNull(),
     provider: text("provider").notNull(), // "google", "linkedin"
-    providerAccountId: text("provider_account_id").notNull(), // LinkedIn's ID
-    refresh_token: text("refresh_token"),
-    access_token: text("access_token"),
-    expires_at: integer("expires_at"),
-    token_type: text("token_type"),
-    scope: text("scope"),
+    providerAccountId: text("provider_account_id").notNull(), // LinkedIn's ID    
+
     id_token: text("id_token"),
     session_state: text("session_state"),
+
+    // 🔐 CRITICAL FIELDS FOR TWITTER OAUTH 2.0:
+    access_token: text("access_token"),
+    refresh_token: text("refresh_token"),
+    expires_at: integer("expires_at"), // Unix timestamp of expiration
+    token_type: text("token_type"),
+    scope: text("scope"),
   },
   (account) => [
     {
