@@ -18,7 +18,7 @@ export default function DashboardSidebar({
     { href: `/dashboard?productId=${activeProduct}`, label: 'Dashboard', icon: LayoutGrid },
     { href: `/generate?productId=${activeProduct}`, label: 'Generate', icon: Sparkles },
     { href: `/publish?productId=${activeProduct}`, label: 'Publish', icon: CalendarDays },
-    { href: '/settings', label: 'Settings', icon: Settings },
+    { href: `/settings?productId=${activeProduct}`, label: 'Settings', icon: Settings },
   ];
 
   return (
@@ -51,11 +51,11 @@ export default function DashboardSidebar({
 
        <div className="mt-auto flex flex-col gap-2 border-t border-gray-200 pt-4">
           <Link
-            href="/workspace/settings"
+            href="/account/settings"
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-950"
           >
             <SlidersHorizontal className="h-4 w-4 text-zinc-400" />
-            Workspace settings
+            Account settings
           </Link>
           <button
               type="button"
