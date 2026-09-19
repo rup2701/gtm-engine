@@ -51,7 +51,7 @@ export default function DashboardSidebar({
 
        <div className="mt-auto flex flex-col gap-2 border-t border-gray-200 pt-4">
           <Link
-            href="/account/settings"
+            href="/account"
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-950"
           >
             <SlidersHorizontal className="h-4 w-4 text-zinc-400" />
