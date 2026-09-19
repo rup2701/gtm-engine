@@ -1,12 +1,10 @@
 // components/ProductEditor.tsx
 'use client';
 
-
 import { useRouter } from 'next/navigation';
 import { updateProduct } from '../(dashboard)/dashboard/action';
 import EditableField from './ui/EditableField';
 import PillEditor from './PillEditor';
-import ConstrainedPillEditor from './ConstrainedPillEditor';
 
 type Product = {
   id: string;
@@ -36,20 +34,6 @@ export default function ProductEditor({ product }: { product: Product }) {
         ? JSON.parse(product.categories || '[]')
         : []
     : [];
-  const times = product
-    ? Array.isArray(product.publishTimes)
-      ? product.publishTimes
-      : typeof product.publishTimes === 'string'
-        ? JSON.parse(product.publishTimes || '[]')
-        : []
-    : [];
-  const platforms = product
-    ? Array.isArray(product.platforms)
-      ? product.platforms
-      : typeof product.platforms === 'string'
-        ? JSON.parse(product.platforms || '[]')
-        : []
-    : [];
 
   return (
     <div>
@@ -75,20 +59,6 @@ export default function ProductEditor({ product }: { product: Product }) {
         label="Categories"
         values={categories}
         onSave={(next) => save({ categories: JSON.stringify(next) })}
-      />
-
-      <ConstrainedPillEditor
-        label="Platforms"
-        values={platforms}
-        options={['twitter', 'linkedin', 'reddit', 'bluesky']}
-        onSave={(next) => save({ platforms: JSON.stringify(next) })}
-      />
-
-      <PillEditor
-        label="Times"
-        values={times }
-        onSave={(next) => save({ publishTimes: JSON.stringify(next) })}
-        sanitize={(v) => v.trim()} // keep 09:00 format
       />
     </div>
   );
