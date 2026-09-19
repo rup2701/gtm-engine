@@ -137,6 +137,18 @@ export async function POST(req: Request) {
             : []
       : [];
     
+    // ...existing code, after platforms is parsed...
+    // ...existing code, after platforms is parsed...
+    if (platforms.length === 0) {
+      return NextResponse.json(
+        {
+          error: 'No channels selected for this product. Enable at least one in Settings.',
+          code: 'NO_PLATFORMS',
+        },
+        { status: 400 },
+      );
+    }
+
     // 3. Build prompt
     const prompt = buildContentPrompt({
       brandName: product.name,

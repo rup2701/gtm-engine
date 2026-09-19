@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
@@ -8,6 +9,7 @@ export default function GeneratePage() {
   const [refreshScrape, setRefreshScrape] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
 
 
   const searchParams = useSearchParams();
@@ -16,6 +18,7 @@ export default function GeneratePage() {
   const handleGenerate = async () => {
     setLoading(true);
     setError(null);
+    setErrorCode(null);
     try {
       const res = await fetch('/api/generate', {
         method: 'POST',
@@ -23,7 +26,10 @@ export default function GeneratePage() {
         body: JSON.stringify({ refreshScrape, productId }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to generate batch.');
+      if (!res.ok) {
+        setErrorCode(data.code ?? null);
+        throw new Error(data.error || 'Failed to generate batch.');
+      }
       setOutput(data.content);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to generate batch.');
@@ -31,9 +37,11 @@ export default function GeneratePage() {
       setLoading(false);
     }
   };
+  
 
   return (
     <main className="min-h-screen bg-[#f8fafc] p-6 font-sans text-gray-900">
+       
       <div className="max-w-5xl mx-auto space-y-8">
         <div className="flex items-center justify-between border-b border-gray-200 pb-6">
           <div>
@@ -46,6 +54,25 @@ export default function GeneratePage() {
           </div>
         </div>
 
+        {error && errorCode === 'NO_PLATFORMS' ? (
+          <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            <span aria-hidden>⚠️</span>
+            <div>
+              {error}{' '}
+              <Link
+                href={`/settings${productId ? `?productId=${productId}` : ''}`}
+                className="font-medium underline hover:text-amber-900"
+              >
+                Select channels in Settings →
+              </Link>
+            </div>
+          </div>
+          ) : error ? (
+            <p className="mt-2 text-sm text-red-600">
+              {error}
+            </p>
+        ) : null
+      }
         <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="text-sm font-semibold text-gray-900">Weekly Batch Generation</h2>
           <p className="text-sm text-gray-500">
@@ -76,7 +103,7 @@ export default function GeneratePage() {
               <span>⚡ Generate Fresh Batch (Vertex AI)</span>
             )}
           </button>
-          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+          {/* {error && <p className="mt-2 text-sm text-red-600">{error}</p>} */}
         </div>
 
         {output && (
