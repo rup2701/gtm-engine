@@ -5,6 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { redirect, notFound } from "next/navigation";
 import IntegrationButtons from "@/app/components/ui/IntegrationButtons";
 import { DistributionForm } from "@/app/components/DistributionForm";
+import { ChannelSelector } from "./ChannelSelector";
 
 export default async function SettingsPage({
   searchParams,
@@ -13,7 +14,6 @@ export default async function SettingsPage({
 }) {
   const userId = await getCurrentUserId();
   if (!userId) redirect("/login");
-
 
   const { productId } = await searchParams;
   const organizationId = await getCurrentOrgId();
@@ -52,20 +52,27 @@ export default async function SettingsPage({
         </p>
       </div>
 
-        <h2 className="text-lg font-semibold mb-2">Integrations</h2>
-        <p className="text-sm text-gray-500 mb-4">
-          Connect your social accounts to unlock all app features.
-        </p>
-      <div className="border p-4 rounded-lg mt-2">
+      <h2 className="text-lg font-semibold mb-2">Channels</h2>
+      <p className="text-sm text-gray-500 mb-4">
+        Choose where this product publishes, and connect your accounts.
+      </p>
+      <div className="border p-4 rounded-lg mt-2 space-y-6">
+        <ChannelSelector
+          productId={currentProduct.id}
+          platforms={currentProduct.platforms ?? []}
+          connectedProviders={[
+            ...(linkedinAccount ? ['linkedin'] : []),
+            ...(twitterAccount ? ['twitter'] : []),
+          ]}
+        />
+        <hr className="border-border border-dashed" />
         <IntegrationButtons
           isLinkedInConnected={!!linkedinAccount}
           isTwitterConnected={!!twitterAccount}
           isDiscordConnected={false}
           isBlueSkyConnected={false}
         />
-
       </div>
-      {/* <hr className=" mt-8" /> */}
 
       <div className="space-y-4 mt-8">
         <h3 className="text-lg font-semibold">Distribution & Automation Schedule</h3>
