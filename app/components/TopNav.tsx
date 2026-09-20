@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { Dispatch, SetStateAction, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { CalendarDays, LogOut, Settings, Sparkles, Zap } from 'lucide-react';
 
 type Product = { id: string; name: string };
@@ -25,6 +25,25 @@ export default function TopNav({
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const switcherRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!switcherRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open]);
 
   const navigation = [
     { href: `/generate?productId=${activeProduct?.id}`, label: 'Generate', icon: Sparkles },
@@ -37,7 +56,7 @@ export default function TopNav({
       {/* Left: Logo */}
 
       {/* Center: Product switcher */}
-      <div className="relative z-50 flex items-center gap-2">
+      <div ref={switcherRef} className="relative z-50 flex items-center gap-2">
       <Link
         href={`/dashboard?productId=${activeProduct?.id || ''}`}
         className="flex items-center gap-3"
@@ -120,7 +139,7 @@ export default function TopNav({
       <div className="flex items-center gap-4">
         <div className="hidden items-center gap-2 rounded-full bg-white/60 px-3 py-1 text-xs text-zinc-500 ring-1 ring-black/5 sm:flex">
           <span className="h-2 w-2 rounded-full bg-emerald-400" />
-          Distribution engine online
+          system: online
         </div>
       </div>
     </header>
