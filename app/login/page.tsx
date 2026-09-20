@@ -34,8 +34,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] px-6">
-      <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4 bg-white p-8 rounded-lg shadow-md">
+    <div className="gtm-canvas flex min-h-screen items-center justify-center px-6">
+      <form onSubmit={handleSubmit} className="glass w-full max-w-md space-y-4 rounded-2xl p-8 ring-1 ring-black/5 shadow-[0_24px_70px_-12px_rgba(16,24,40,0.25)]">
         <h1 className="text-2xl font-bold text-[#111827] mb-6">
           Sign in to your account
         </h1>
@@ -50,7 +50,7 @@ export default function LoginPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="w-full bg-white border border-[#e5e7eb] rounded-[2px] px-4 py-3 text-[#111827] font-mono placeholder:text-[#9ca3af] focus:outline-none focus:border-[#00b377] focus:ring-1 focus:ring-[#00b377]"
+          className="w-full rounded-xl border border-[#e5e7eb] bg-white px-4 py-3 font-mono text-[#111827] placeholder:text-[#9ca3af] focus:border-[#00b377] focus:outline-none focus:ring-1 focus:ring-[#00b377]"
         />
 
         <input
@@ -59,14 +59,14 @@ export default function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="w-full bg-white border border-[#e5e7eb] rounded-[2px] px-4 py-3 text-[#111827] font-mono placeholder:text-[#9ca3af] focus:outline-none focus:border-[#00b377] focus:ring-1 focus:ring-[#00b377]"
+          className="w-full rounded-xl border border-[#e5e7eb] bg-white px-4 py-3 font-mono text-[#111827] placeholder:text-[#9ca3af] focus:border-[#00b377] focus:outline-none focus:ring-1 focus:ring-[#00b377]"
         />
 
         
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 bg-[#00b377] text-white font-bold font-mono rounded-[2px] hover:bg-[#008d61] transition-all disabled:opacity-50"
+          className="w-full rounded-xl bg-[#00b377] py-3 font-bold font-mono text-white transition-all hover:bg-[#008d61] disabled:opacity-50"
         >
           {loading ? 'Signing in...' : 'Sign In →'}
         </button>
@@ -76,7 +76,7 @@ export default function LoginPage() {
             <div className="w-full border-t border-gray-200" />
           </div>
           <div className="relative flex justify-center text-xs">
-            <span className="bg-[#f8fafc] px-3 text-gray-400">or</span>
+            <span className="rounded-full bg-white px-3 text-gray-400 ring-1 ring-black/5">or</span>
           </div>
         </div>
 

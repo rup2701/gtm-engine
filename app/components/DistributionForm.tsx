@@ -73,10 +73,10 @@ export function DistributionForm({ product }: DistributionFormProps) {
   };
 
   return (
-    <div className="space-y-6 bg-card border rounded-xl p-6 shadow-sm">
+    <div className="space-y-6 rounded-2xl bg-white p-6 ring-1 ring-black/5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
       
       {/* 🤖 MASTER AUTOMATION TOGGLE */}
-      <div className="flex items-center justify-between pb-4 border-b">
+      <div className="flex items-center justify-between border-b border-black/5 pb-4">
         <div>
           <label className="text-sm font-semibold block text-foreground">Autonomous Publishing Mode</label>
           <span className="text-xs text-muted-foreground block mt-0.5">
@@ -111,7 +111,7 @@ export function DistributionForm({ product }: DistributionFormProps) {
           {publishTimes.map((time) => (
             <span
               key={time}
-              className="inline-flex items-center gap-1.5 px-3 py-1 text-sm bg-primary/10 text-primary border border-primary/20 rounded-lg font-medium"
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary ring-1 ring-inset ring-primary/20"
             >
               {time}
               <button
@@ -130,11 +130,11 @@ export function DistributionForm({ product }: DistributionFormProps) {
               type="time"
               value={newTime}
               onChange={(e) => setNewTime(e.target.value)}
-              className="px-2 py-0.5 text-sm bg-background border rounded-md focus:outline-none focus:ring-1 focus:ring-primary h-8"
+              className="h-8 rounded-lg border border-black/10 bg-background px-2 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
             />
             <button
               type="submit"
-              className="text-xs px-2.5 h-8 border border-dashed rounded-md hover:bg-accent font-medium text-muted-foreground hover:text-foreground"
+              className="h-8 rounded-lg border border-dashed border-black/10 px-2.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
             >
               + Add
             </button>
@@ -155,7 +155,7 @@ export function DistributionForm({ product }: DistributionFormProps) {
             max={frequencyMax}
             value={frequencyMin}
             onChange={(e) => setFrequencyMin(parseInt(e.target.value) || 1)}
-            className="w-full px-3 py-2 text-sm bg-background border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full rounded-xl border border-black/10 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
 
@@ -170,7 +170,7 @@ export function DistributionForm({ product }: DistributionFormProps) {
             max={30}
             value={frequencyMax}
             onChange={(e) => setFrequencyMax(parseInt(e.target.value) || 5)}
-            className="w-full px-3 py-2 text-sm bg-background border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full rounded-xl border border-black/10 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
       </div>
@@ -178,7 +178,7 @@ export function DistributionForm({ product }: DistributionFormProps) {
       {/* 🛎️ NOTIFICATION FEEDBACK BAR */}
       {statusMessage && (
         <div
-          className={`p-3 rounded-lg text-sm font-medium ${
+          className={`rounded-xl p-3 text-sm font-medium ${
             statusMessage.type === "success"
               ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
               : "bg-destructive/10 text-destructive border border-destructive/20"
@@ -194,7 +194,7 @@ export function DistributionForm({ product }: DistributionFormProps) {
           type="button"
           onClick={handleSubmit}
           disabled={isSaving}
-          className="px-5 py-2.5 text-sm font-medium bg-foreground text-background rounded-lg hover:opacity-90 transition disabled:opacity-50"
+          className="rounded-xl bg-foreground px-5 py-2.5 text-sm font-medium text-background transition hover:opacity-90 disabled:opacity-50"
         >
           {isSaving ? "Saving Configuration..." : "Save Delivery Configuration"}
         </button>

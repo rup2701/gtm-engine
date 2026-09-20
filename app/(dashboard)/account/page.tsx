@@ -2,7 +2,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { users, organizations, subscriptions } from "@/db/schema";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getCurrentUserId, getCurrentOrgId } from "@/lib/auth";
 import { ProfileForm } from "./profile-form";
 import Link from "next/link";
@@ -51,7 +51,7 @@ export default async function AccountPage({
       </div>
 
       {/* ── Tab bar ─────────────────────────────────────────── */}
-      <nav className="flex gap-1 border-b border-gray-200">
+      <nav className="flex gap-1 border-b border-black/5">
         {TABS.map(({ id, label }) => (
           <Link
             key={id}
@@ -106,7 +106,7 @@ export default async function AccountPage({
             )}
           </div>
 
-          <div className="border rounded-lg p-4 text-sm text-gray-500">
+          <div className="rounded-2xl p-4 text-sm text-gray-500 ring-1 ring-black/5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
             <p className="mb-1">
               <span className="text-foreground">{user.name ?? user.email}</span> — you (owner)
             </p>

@@ -141,7 +141,7 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white p-8">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-8 ring-1 ring-black/5 shadow-[0_24px_70px_-12px_rgba(16,24,40,0.35)]">
         <div className="mb-4 flex items-start justify-between gap-4">
           <h2 id="add-product-title" className="sr-only">Add product</h2>
           <button
@@ -164,13 +164,13 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
               placeholder="Website URL (e.g. appnomics.dev)"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              className="w-full border border-gray-200 p-3 mb-4 rounded font-mono text-sm focus:outline-none focus:border-[#00b377]"
+              className="mb-4 w-full rounded-xl border border-gray-200 p-3 font-mono text-sm focus:border-[#00b377] focus:outline-none"
             />
 
             <button
               onClick={handleScrapeAndExtract}
               disabled={loading || !url}
-              className="w-full bg-[#00b377] text-white py-3 rounded font-bold hover:bg-[#008d61] disabled:opacity-50"
+              className="w-full rounded-xl bg-[#00b377] py-3 font-bold text-white hover:bg-[#008d61] disabled:opacity-50"
             >
               {loading ? 'Analyzing site...' : 'Continue →'}
             </button>

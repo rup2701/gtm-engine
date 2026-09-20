@@ -33,32 +33,32 @@ export default function TopNav({
   ];
   
   return (
-    <header className="h-14 border-b border-gray-200 bg-white flex items-center justify-between px-6">
+    <header className="glass relative z-50 mx-3 mt-3 flex h-14 items-center justify-between rounded-2xl px-4 ring-1 ring-black/5 shadow-[0_1px_2px_rgba(16,24,40,0.05),0_12px_32px_-16px_rgba(16,24,40,0.18)]">
       {/* Left: Logo */}
 
       {/* Center: Product switcher */}
-      <div className="flex items-center gap-2 relative">
+      <div className="relative z-50 flex items-center gap-2">
       <Link
         href={`/dashboard?productId=${activeProduct?.id || ''}`}
         className="flex items-center gap-3"
         aria-label="dispatchOS home"
       >
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-400 text-zinc-950 shadow-[0_0_24px_rgba(52,211,153,0.2)]">
+        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-400 text-zinc-950 shadow-[0_0_24px_rgba(52,211,153,0.2)]">
           <Zap className="h-4 w-4" strokeWidth={2.5} />
         </span>
         {/* <span className="text-base font-semibold tracking-tight">dispatchOS</span> */}
       </Link>
         <button
           onClick={() => setOpen(!open)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded border text-gray-700 border-gray-200 text-sm md:text-md font-bold hover:border-gray-300"
+          className="flex items-center gap-2 rounded-full bg-white/70 px-3.5 py-1.5 text-sm font-semibold text-zinc-700 ring-1 ring-black/5 transition hover:bg-white hover:ring-black/10"
         >
           <span className="w-2 h-2 rounded-full bg-[#00b377]" />
           {activeProduct?.name || 'No product'}
-          <span className="text-gray-400 text-xl">▾</span>
+          <span className="text-xs text-zinc-400">▾</span>
         </button>
 
         {open && (
-          <div className="absolute top-full left-0 mt-1 min-w-[200px] bg-white  border-gray-200 rounded shadow-sm z-20">
+          <div className="absolute top-full left-0 z-50 mt-2 min-w-[220px] rounded-2xl bg-white p-1.5 ring-1 ring-black/5 shadow-[0_8px_30px_-6px_rgba(16,24,40,0.25)]">
             {products.map((p) => (
               <button
                 key={p.id}
@@ -67,7 +67,7 @@ export default function TopNav({
                   router.push(`/dashboard?productId=${p.id}`);
                   onProductChange(p) 
                 }}
-                className={`w-full text-left px-3 py-2 text-sm md:text-md hover:bg-gray-50 ${
+                className={`w-full text-left rounded-xl px-3 py-2 text-sm md:text-md hover:bg-zinc-100 ${
                   p.id === activeProduct?.id
                     ? 'text-[#00b377] font-semibold'
                     : 'text-gray-700'
@@ -76,15 +76,17 @@ export default function TopNav({
                 {p.name}
               </button>
             ))}
-            <button
-              onClick={() => {
-                setOpen(false);
-                router.push('/dashboard?addProduct=true');
-              }}
-              className="w-full text-left px-3 py-2 text-sm md:text-md text-gray-500 border-t border-gray-100 hover:bg-gray-50"
-            >
-              + Add Product
-            </button>
+            <div className="mt-1 border-t border-black/5 pt-1">
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  router.push('/dashboard?addProduct=true');
+                }}
+                className="w-full text-left rounded-xl px-3 py-2 text-sm md:text-md text-gray-500 hover:bg-zinc-100"
+              >
+                + Add Product
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -96,8 +98,8 @@ export default function TopNav({
               key={href}
               href={href}
               aria-label={label}
-              className={`rounded-md p-2 transition-colors ${
-                isActive ? 'bg-emerald-50 text-emerald-700' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-950'
+              className={`rounded-xl p-2 transition-colors ${
+                isActive ? 'bg-emerald-500/10 text-emerald-700' : 'text-zinc-400 hover:bg-white/70 hover:text-zinc-950'
               }`}
             >
               <Icon className="h-4 w-4" />
@@ -107,7 +109,7 @@ export default function TopNav({
         <button
           type="button"
           onClick={() => signOut({ callbackUrl: '/login' })}
-          className="rounded-md p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-950"
+            className="rounded-xl p-2 text-zinc-400 transition-colors hover:bg-white/70 hover:text-zinc-950"
           aria-label="Sign out"
         >
           <LogOut className="h-4 w-4" />
@@ -116,7 +118,7 @@ export default function TopNav({
       
       {/* Right: Status + Logout */}
       <div className="flex items-center gap-4">
-        <div className="hidden items-center gap-2 text-xs text-zinc-500 sm:flex">
+        <div className="hidden items-center gap-2 rounded-full bg-white/60 px-3 py-1 text-xs text-zinc-500 ring-1 ring-black/5 sm:flex">
           <span className="h-2 w-2 rounded-full bg-emerald-400" />
           Distribution engine online
         </div>

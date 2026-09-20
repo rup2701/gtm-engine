@@ -229,11 +229,11 @@ export default function StagingPage() {
 
   if (fetchError) {
     return (
-      <div className="flex min-h-[400px] flex-col items-center justify-center gap-3 bg-[#f8fafc]">
+      <div className="flex min-h-[400px] flex-col items-center justify-center gap-3">
         <div className="text-red-600">{fetchError}</div>
         <button
           onClick={() => fetchWeekData(weekOffset)}
-          className="rounded-lg bg-[var(--brand)] px-4 py-2 text-white hover:bg-[var(--brand-hover)]"
+            className="rounded-xl bg-[var(--brand)] px-4 py-2 text-white hover:bg-[var(--brand-hover)]"
         >
           Try again
         </button>
@@ -248,12 +248,12 @@ export default function StagingPage() {
   const hasPosts = weekData && weekData.posts.length > 0;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-6">
+    <div className="p-6">
       {/* ─── Header (always visible) ────────────────────────────── */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold text-gray-900">Content Calendar</h1>
-          <span className="text-[12px] bg-[var(--brand-soft)] md:text-sm text-gray-700 font-mono  px-3 py-1 rounded-full border">
+          <span className="text-[12px] bg-[var(--brand-soft)] md:text-sm text-gray-700 font-mono px-3 py-1 rounded-full ring-1 ring-black/5">
             {getWeekRange(weekOffset)}
           </span>
           {isPastWeek(weekOffset) && (
@@ -264,7 +264,7 @@ export default function StagingPage() {
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setWeekOffset((prev) => prev - 1)}
-            className="p-2 bg-white rounded-lg border hover:bg-gray-50 transition"
+            className="rounded-xl bg-white p-2 ring-1 ring-black/5 transition hover:bg-zinc-50"
             title="Previous week"
           >
             <ChevronLeft className="w-5 h-5 text-gray-600" />
@@ -272,7 +272,7 @@ export default function StagingPage() {
 
           <button
             onClick={() => setWeekOffset(0)}
-            className="px-3 py-2 text-sm font-medium bg-white rounded-lg border hover:bg-gray-50 transition"
+            className="rounded-xl bg-white px-3 py-2 text-sm font-medium ring-1 ring-black/5 transition hover:bg-zinc-50"
           >
             This Week
           </button>
@@ -280,7 +280,7 @@ export default function StagingPage() {
           <button
             onClick={() => setWeekOffset((prev) => prev + 1)}
             disabled={weekOffset >= maxForwardOffset}
-            className={`p-2 bg-white rounded-lg border transition ${
+            className={`rounded-xl bg-white p-2 ring-1 ring-black/5 transition ${
               weekOffset >= maxForwardOffset
                 ? 'opacity-50 cursor-not-allowed'
                 : 'hover:bg-gray-50'
@@ -295,7 +295,7 @@ export default function StagingPage() {
           <button
             onClick={handleQueueAll}
             disabled={isPastWeek(weekOffset) || !hasPosts}
-            className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition ${
+            className={`flex items-center gap-2 px-4 py-2 text-sm rounded-xl transition ${
               isPastWeek(weekOffset) || !hasPosts
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 : 'bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]'
@@ -309,7 +309,7 @@ export default function StagingPage() {
       {/* ─── Content ──────────────────────────────────────────────── */}
       {!hasPosts ? (
         // ─── Empty State ──────────────────────────────────────────
-        <div className="bg-white rounded-xl border shadow-sm p-12 text-center">
+        <div className="rounded-2xl bg-white p-12 text-center ring-1 ring-black/5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
           <div className="max-w-md mx-auto">
             <div className="text-6xl mb-4">📅</div>
             <h2 className="text-2xl font-semibold text-gray-700 mb-2">
@@ -323,7 +323,7 @@ export default function StagingPage() {
             {!isPastWeek(weekOffset) && (
               <button
                 onClick={() => handleRegenerate(false)}
-                className="px-6 py-2 bg-[var(--brand)] font-medium  rounded-lg hover:bg-[var(--brand-hover)] transition"
+                className="rounded-xl bg-[var(--brand)] px-6 py-2 font-medium hover:bg-[var(--brand-hover)] transition"
               >
                 <RefreshCw className="w-4 h-4 inline mr-2" />
                 Generate Posts
@@ -343,7 +343,7 @@ export default function StagingPage() {
             return (
               <div
                 key={day}
-                className="bg-white rounded-xl border shadow-sm overflow-visible flex flex-col"
+                className="flex flex-col overflow-visible rounded-2xl bg-white ring-1 ring-black/5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
               >
                 {/* Day header */}
                 <div
@@ -396,20 +396,20 @@ export default function StagingPage() {
                             key={post.id}
                             onMouseEnter={() => showPostDetails(post.id)}
                             onMouseLeave={hidePostDetails}
-                            className={`relative p-3 rounded-lg border transition-all ${
+                            className={`relative p-3 rounded-xl transition-all ring-1 ${
                               post.status === 'dropped'
                                 ? 'opacity-50 bg-gray-50'
                                 : post.status === 'published'
-                                ? 'bg-[var(--brand-soft)] border-[var(--brand)]'
+                                ? 'bg-[var(--brand-soft)] ring-[var(--brand)]'
                                 : isManualPlatform
-                                ? 'bg-amber-50 border-amber-200 hover:shadow-md'
-                                : 'bg-white hover:shadow-md'
+                                ? 'bg-amber-50 ring-amber-200 hover:shadow-md'
+                                : 'bg-white ring-black/5 hover:shadow-md'
                             }`}
                           >
                             {hoveredPost === post.id && (
                               <div
                                 role="tooltip"
-                                className="absolute left-0 top-full z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-lg border border-gray-200 bg-[#f8f8f8] p-4 text-left shadow-xl"
+                                className="absolute left-0 top-full z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-2xl bg-white p-4 text-left ring-1 ring-black/5 shadow-[0_8px_30px_-6px_rgba(16,24,40,0.25)]"
                               >
                                 <div className="mb-2 flex items-center justify-between gap-3 border-b border-gray-100 pb-2">
                                   <span className="font-semibold text-gray-900">
@@ -571,7 +571,7 @@ export default function StagingPage() {
 
       {/* ─── Footer Stats (only when posts exist) ────────────────── */}
       {hasPosts && (
-        <div className="mt-6 p-4 bg-white rounded-xl border shadow-sm">
+        <div className="mt-6 rounded-2xl bg-white p-4 ring-1 ring-black/5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
           <div className="flex items-center justify-between text-sm flex-wrap gap-2">
             <div className="flex items-center gap-6 flex-wrap">
               <span className="font-medium text-gray-700">
@@ -597,7 +597,7 @@ export default function StagingPage() {
       {/* ─── Edit Modal ───────────────────────────────────────────── */}
       {isEditing && selectedPost && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full p-6 shadow-xl">
+          <div className="w-full max-w-2xl rounded-2xl bg-white p-6 ring-1 ring-black/5 shadow-[0_24px_70px_-12px_rgba(16,24,40,0.35)]">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Edit Post</h3>
             <div className="mb-4">
               <div className="flex items-center gap-2 text-sm text-gray-500 mb-2 flex-wrap">
@@ -617,7 +617,7 @@ export default function StagingPage() {
               <textarea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
-                className="w-full h-48 p-3 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]"
+                className="h-48 w-full rounded-xl border border-black/10 p-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]"
               />
             </div>
             <div className="flex items-center justify-end gap-3">
@@ -632,7 +632,7 @@ export default function StagingPage() {
               </button>
               <button
                 onClick={() => updatePostContent(selectedPost.id, editContent)}
-                className="px-4 py-2 bg-[var(--brand)] text-white rounded-lg hover:bg-[var(--brand-hover)] transition"
+                className="rounded-xl bg-[var(--brand)] px-4 py-2 text-white transition hover:bg-[var(--brand-hover)]"
               >
                 Save Changes
               </button>

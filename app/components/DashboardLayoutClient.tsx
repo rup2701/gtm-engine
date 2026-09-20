@@ -25,15 +25,17 @@ export default function DashboardLayoutClient({
   );
 
   return (
-    <div className="h-screen flex flex-col bg-[#f8fafc]">
+    <div className="gtm-canvas flex h-screen flex-col text-zinc-950">
       <TopNav
         products={products}
         activeProduct={activeProduct}
         onProductChange={setActiveProduct}
       />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 gap-3 overflow-hidden p-3">
         <DashboardSidebar activeProduct={activeProduct?.id ?? null} />
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1 overflow-y-auto rounded-2xl bg-white ring-1 ring-black/5 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_12px_32px_-16px_rgba(16,24,40,0.12)]">
+          {children}
+        </main>
       </div>
     </div>
   );

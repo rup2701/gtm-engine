@@ -40,22 +40,22 @@ export default function GeneratePage() {
   
 
   return (
-    <main className="min-h-screen bg-[#f8fafc] p-6 font-sans text-gray-900">
+    <main className="p-6 font-sans text-gray-900">
        
       <div className="max-w-5xl mx-auto space-y-8">
-        <div className="flex items-center justify-between border-b border-gray-200 pb-6">
+        <div className="flex items-center justify-between border-b border-black/5 pb-6">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Generate</h1>
             {/* <p className="text-sm text-gray-500">Vertex AI Pipeline • Project: instaroom-501622</p> */}
           </div>
-          <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600">
+          <div className="flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs text-gray-600 ring-1 ring-black/5">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span>Engine Ready</span>
           </div>
         </div>
 
         {error && errorCode === 'NO_PLATFORMS' ? (
-          <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <div className="mt-2 flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-800 ring-1 ring-inset ring-amber-600/15">
             <span aria-hidden>⚠️</span>
             <div>
               {error}{' '}
@@ -73,8 +73,7 @@ export default function GeneratePage() {
             </p>
         ) : null
       }
-        <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="text-sm font-semibold text-gray-900">Weekly Batch Generation</h2>
+        <div className="space-y-4 rounded-2xl bg-white p-6 ring-1 ring-black/5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
           <p className="text-sm text-gray-500">
             Triggers Gemini 2.5 Flash to synthesize 3–5 posts/day across your core categories using your master files and upload memory.
           </p>
@@ -107,7 +106,7 @@ export default function GeneratePage() {
         </div>
 
         {output && (
-          <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="space-y-4 rounded-2xl bg-white p-6 ring-1 ring-black/5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-gray-900">Generated Staging Preview</h2>
               <button
@@ -117,7 +116,7 @@ export default function GeneratePage() {
                 Sync to Publishing Queue →
               </button>
             </div>
-            <pre className="max-h-96 overflow-x-auto rounded-lg border border-gray-200 bg-gray-50 p-4 text-xs text-gray-700">
+            <pre className="max-h-96 overflow-x-auto rounded-xl bg-zinc-50 p-4 text-xs text-gray-700 ring-1 ring-black/5">
               {output}
             </pre>
           </div>

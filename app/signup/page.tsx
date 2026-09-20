@@ -41,8 +41,8 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] px-6">
-      <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4 bg-white px-6 py-12 rounded-2xl shadow-md">
+    <div className="gtm-canvas flex min-h-screen items-center justify-center px-6">
+      <form onSubmit={handleSubmit} className="glass w-full max-w-md space-y-4 rounded-2xl px-6 py-12 ring-1 ring-black/5 shadow-[0_24px_70px_-12px_rgba(16,24,40,0.25)]">
         <h1 className="text-xl text-center font-medium text-[#111827] mb-6">
           Welcome to DispatchOS
         </h1>
@@ -54,7 +54,7 @@ export default function SignupPage() {
             <div className="w-full border-t border-gray-200" />
           </div>
           <div className="relative flex justify-center text-xs">
-            <span className="bg-[#f8fafc] px-3 text-gray-400">or</span>
+            <span className="rounded-full bg-white px-3 text-gray-400 ring-1 ring-black/5">or</span>
           </div>
         </div>
         
@@ -67,7 +67,7 @@ export default function SignupPage() {
           placeholder="Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full bg-white border border-[#e5e7eb] rounded-[2px] px-4 py-3 text-[#111827] font-mono placeholder:text-[#9ca3af] focus:outline-none focus:border-[#00d48a] focus:ring-1 focus:ring-[#00d48a]"
+          className="w-full rounded-xl border border-[#e5e7eb] bg-white px-4 py-3 font-mono text-[#111827] placeholder:text-[#9ca3af] focus:border-[#00d48a] focus:outline-none focus:ring-1 focus:ring-[#00d48a]"
         />
 
         <input
@@ -76,7 +76,7 @@ export default function SignupPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="w-full bg-white border border-[#e5e7eb] rounded-[2px] px-4 py-3 text-[#111827] font-mono placeholder:text-[#9ca3af] focus:outline-none focus:border-[#00d48a] focus:ring-1 focus:ring-[#00d48a]"
+          className="w-full rounded-xl border border-[#e5e7eb] bg-white px-4 py-3 font-mono text-[#111827] placeholder:text-[#9ca3af] focus:border-[#00d48a] focus:outline-none focus:ring-1 focus:ring-[#00d48a]"
         />
 
         <input
@@ -86,7 +86,7 @@ export default function SignupPage() {
           onChange={(e) => setPassword(e.target.value)}
           required
           minLength={8}
-          className="w-full bg-white border border-[#e5e7eb] rounded-[2px] px-4 py-3 text-[#111827] font-mono placeholder:text-[#9ca3af] focus:outline-none focus:border-[#00d48a] focus:ring-1 focus:ring-[#00d48a]"
+          className="w-full rounded-xl border border-[#e5e7eb] bg-white px-4 py-3 font-mono text-[#111827] placeholder:text-[#9ca3af] focus:border-[#00d48a] focus:outline-none focus:ring-1 focus:ring-[#00d48a]"
         />
 
         
@@ -94,7 +94,7 @@ export default function SignupPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 bg-[var(--brand)] text-white font-bold font-mono rounded-[2px] hover:bg-[var(--brand-hover)] transition-all disabled:opacity-50"
+          className="w-full rounded-xl bg-[var(--brand)] py-3 font-bold font-mono text-white transition-all hover:bg-[var(--brand-hover)] disabled:opacity-50"
         >
           {loading ? 'Creating...' : 'Create Account →'}
         </button>

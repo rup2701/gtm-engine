@@ -71,14 +71,14 @@ export default function IntegrationButtons({ isLinkedInConnected, isTwitterConne
           <button
             onClick={handleDisconnectLinkedIn}
             disabled={isPending || loadingProvider === "linkedin"}
-            className="border border-red-200 text-red-600 hover:bg-red-50 text-xs px-3 py-1.5 rounded-md transition-colors disabled:opacity-50"
+            className="rounded-xl px-3 py-1.5 text-xs text-red-600 ring-1 ring-inset ring-red-200 transition-colors hover:bg-red-50 disabled:opacity-50"
           >
             {isPending ? "Disconnecting..." : "Disconnect"}
           </button>
         ) : (
           <button
             onClick={() => handleConnect("linkedin")}
-            className="bg-[#0077B5] hover:bg-[#006396] text-white text-xs px-3 py-1.5 rounded-md font-medium transition-colors"
+            className="rounded-xl bg-[#0077B5] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#006396]"
           >
             Connect Account
           </button>
@@ -98,14 +98,14 @@ export default function IntegrationButtons({ isLinkedInConnected, isTwitterConne
           <button
             onClick={handleDisconnectTwitter}
             disabled={isPending || loadingProvider === "twitter"}
-            className="border border-red-200 text-red-600 hover:bg-red-50 text-xs px-3 py-1.5 rounded-md transition-colors disabled:opacity-50"
+            className="rounded-xl px-3 py-1.5 text-xs text-red-600 ring-1 ring-inset ring-red-200 transition-colors hover:bg-red-50 disabled:opacity-50"
           >
             {isPending ? "Disconnecting..." : "Disconnect"}
           </button>
         ) : (
           <button
             onClick={() => handleConnect("twitter")}
-            className="bg-[#1DA1F2] hover:bg-[#0d8ddb] text-white text-xs px-3 py-1.5 rounded-md font-medium transition-colors"
+            className="rounded-xl bg-[#1DA1F2] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#0d8ddb]"
           >
             Connect Account
           </button>
@@ -123,7 +123,7 @@ export default function IntegrationButtons({ isLinkedInConnected, isTwitterConne
           </button>
           
           {showHelp && (
-            <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-800 leading-relaxed">
+            <div className="mt-2 rounded-xl bg-amber-50 p-3 leading-relaxed text-amber-800 ring-1 ring-inset ring-amber-600/15">
               <p className="font-semibold mb-1">Important Note:</p>
               <p className="mb-2">
                 LinkedIn often hides its Sign in with Google button on external connection screens. If your LinkedIn account doesn&apos;t have a regular password, you will get stuck.

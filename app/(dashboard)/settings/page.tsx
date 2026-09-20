@@ -56,7 +56,7 @@ export default async function SettingsPage({
       <p className="text-sm text-gray-500 mb-4">
         Choose where this product publishes, and connect your accounts.
       </p>
-      <div className="border p-4 rounded-lg mt-2 space-y-6">
+      <div className="rounded-2xl bg-white p-5 ring-1 ring-black/5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] space-y-6">
         <ChannelSelector
           productId={currentProduct.id}
           platforms={currentProduct.platforms ?? []}

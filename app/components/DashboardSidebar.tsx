@@ -22,51 +22,49 @@ export default function DashboardSidebar({
   ];
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)]">
-      <aside className="hidden min-h-[calc(100vh-4rem)] w-56 flex-col border-r border-gray-200 bg-white p-3 md:flex">
-        <div className="mt-2 mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
-          Workspace
-        </div>
-        <nav className="flex flex-col gap-1">
-          {navItems.map(({ href, label, icon: Icon }) => {
-            const isActive = pathname === href;
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-emerald-50 text-emerald-800'
-                    : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950'
-                }`}
-              >
-                <Icon className={`h-4 w-4 ${isActive ? 'text-emerald-600' : 'text-zinc-400'}`} />
-                {label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="flex-1" />
-
-       <div className="mt-auto flex flex-col gap-2 border-t border-gray-200 pt-4">
-          <Link
-            href="/account"
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-950"
-          >
-            <SlidersHorizontal className="h-4 w-4 text-zinc-400" />
-            Account settings
-          </Link>
-          <button
-              type="button"
-              onClick={() => signOut({ callbackUrl: '/login' })}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-950"
+    <aside className="glass hidden w-56 shrink-0 flex-col self-stretch rounded-2xl p-2 ring-1 ring-black/5 shadow-[0_1px_2px_rgba(16,24,40,0.05),0_12px_32px_-16px_rgba(16,24,40,0.15)] md:flex">
+      <div className="mt-2 mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
+        Workspace
+      </div>
+      <nav className="flex flex-col gap-1">
+        {navItems.map(({ href, label, icon: Icon }) => {
+          const isActive = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-emerald-500/10 text-emerald-800 ring-1 ring-inset ring-emerald-600/15'
+                  : 'text-zinc-600 hover:bg-white/70 hover:text-zinc-950'
+              }`}
             >
-              <LogOut className="h-4 w-4 text-zinc-400" />
-              Sign out
-            </button>
-        </div>
-      </aside>
-    </div>
+              <Icon className={`h-4 w-4 ${isActive ? 'text-emerald-600' : 'text-zinc-400'}`} />
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="flex-1" />
+
+      <div className="mt-auto flex flex-col gap-1 border-t border-black/5 pt-3">
+        <Link
+          href="/account"
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-white/70 hover:text-zinc-950"
+        >
+          <SlidersHorizontal className="h-4 w-4 text-zinc-400" />
+          Account settings
+        </Link>
+        <button
+          type="button"
+          onClick={() => signOut({ callbackUrl: '/login' })}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-white/70 hover:text-zinc-950"
+        >
+          <LogOut className="h-4 w-4 text-zinc-400" />
+          Sign out
+        </button>
+      </div>
+    </aside>
   );
 }
