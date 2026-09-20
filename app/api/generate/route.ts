@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     // const body = await req.json().catch(() => ({}));
     // const weeksToGenerate = body.weeks ?? 1;
 
-    const { productId } = await req.json();
+    const { productId, force } = await req.json();
     
 
     if (!productId ) {
@@ -84,6 +84,46 @@ export async function POST(req: Request) {
     // Get current week key (e.g., "2025-W15")
     const weekKey = getWeekKey(getDefaultOffset());
     console.log(`Generating content for week: ${weekKey}`);
+
+    // ── Regen boundaries ──────────────────────────────────────────
+    // 1. Week locked: any queued/published posts block regeneration.
+    const weekPosts = await db
+      .select({ id: posts.id, status: posts.status })
+      .from(posts)
+      .where(and(eq(posts.productId, productId), eq(posts.weekKey, weekKey)));
+
+    const lockedCount = weekPosts.filter(
+      (p) => p.status === 'queued' || p.status === 'published'
+    ).length;
+    if (lockedCount > 0) {
+      return NextResponse.json(
+        {
+          error: 'This week has queued or published posts and cannot be regenerated.',
+          code: 'WEEK_LOCKED',
+          lockedCount,
+        },
+        { status: 409 }
+      );
+    }
+
+    // 2. Drafts exist: require explicit force, then hard-delete them.
+    const draftIds = weekPosts.filter((p) => p.status === 'draft').map((p) => p.id);
+    if (draftIds.length > 0 && force !== true) {
+      return NextResponse.json(
+        {
+          error: `${draftIds.length} draft posts already exist for this week.`,
+          code: 'DRAFTS_EXIST',
+          draftCount: draftIds.length,
+        },
+        { status: 409 }
+      );
+    }
+    if (draftIds.length > 0 && force === true) {
+      await db
+        .delete(posts)
+        .where(and(eq(posts.productId, productId), eq(posts.weekKey, weekKey), eq(posts.status, 'draft')));
+      console.log(`Force regen: deleted ${draftIds.length} existing drafts for ${weekKey}.`);
+    }
     
     // Build context with week + website content (for versioning)
     const contextString = `${weekKey}:${product.name}:${scrapedContext}: ${product.description}: ${product.icp}: ${product.tone}: ${product.categories}: ${product.frequencyMin}: ${product.frequencyMax}: ${product.publishTimes}: ${product.platforms}`;
@@ -92,34 +132,6 @@ export async function POST(req: Request) {
       .createHash('sha256')
       .update(contextString)
       .digest('hex');
-
-    // Check for existing batch
-    // Check if a batch already exists for this week + context
-    const [existingBatch] = await db.select()
-      .from(posts)
-      .where(
-        and(
-          eq(posts.contextHash, contextHash),
-          eq(posts.userId, userId),
-          eq(posts.status, 'draft'),
-          eq(posts.weekKey, weekKey)
-        )
-      )
-      .limit(1);
-
-    if (existingBatch) {
-      console.log('Batch already exists for this week.');
-      return NextResponse.json({
-        success: false,
-        message: 'Batch already exists for this week.',
-        batchId: existingBatch.batchId,
-      }, { status: 200 }); // ← 200 OK so frontend can handle gracefully
-
-        // Option B: Force regenerate by deleting old batch
-        // await db.delete(posts).where(eq(posts.batchId, existingBatch.batchId));
-        // Then continue to create new batch
-    }
-
 
     const times = product
         ? Array.isArray(product.publishTimes)
