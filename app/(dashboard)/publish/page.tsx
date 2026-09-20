@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, RefreshCw, Edit, Send } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { getDefaultOffset, getMondayDate, isPastWeek, getMaxForwardOffset, getCalendarWeekKey } from '@/lib/date-utils';
+import { getDefaultOffset, getMondayDate, isPastWeek, getMaxForwardOffset, getWeekKey } from '@/lib/date-utils';
 import { isToday } from 'date-fns';
 
 type Post = {
@@ -83,12 +83,6 @@ export default function StagingPage() {
     setHoveredPost(null);
   };
 
-  const getWeekKey = (offset: number) => {
-    const monday = getMondayDate(offset);
-    return getCalendarWeekKey(monday);
-    // return '2026-W38'
-  };
-
   const getWeekRange = (offset: number) => {
     const monday = getMondayDate(offset);
     const friday = new Date(monday);
@@ -103,16 +97,15 @@ export default function StagingPage() {
 
   const fetchWeekData = async (offset: number, currentProductId?: string | null) => {
     const url = new URL('/api/posts', window.location.origin);
-    // url.searchParams.set('weekKey', getWeekKey(offset));
-    url.searchParams.set('weekKey', getWeekKey(offset));
-    console.log('Fetching week data for weekKey:', getWeekKey(offset), 'and productId:', currentProductId);
     if (currentProductId) {
       url.searchParams.set('productId', currentProductId);
     }
     
     setLoading(true);
     setFetchError(null);
+    
     const weekKey = getWeekKey(offset);
+    console.log('Fetching week data for weekKey:', weekKey, 'and productId:', currentProductId);
 
     try {
       const url = new URL('/api/posts', window.location.origin);
@@ -133,7 +126,6 @@ export default function StagingPage() {
       }
 
       setWeekData(data);
-      // console.log('WeekData', weekData);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch posts';
       console.error('Failed to fetch posts:', error);

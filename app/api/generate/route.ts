@@ -6,7 +6,7 @@ import { GoogleGenAI } from '@google/genai';
 import { batches, posts, scrapedContent, products, organizations } from '@/db/schema';
 import { db } from '@/db';
 import crypto from 'crypto';
-import { getNextWeekDate, getWeekIdentifier } from '@/lib/date-utils';
+import { getWeekKey, getDefaultOffset } from '@/lib/date-utils';
 
 import { eq, and } from 'drizzle-orm';
 import { getCurrentUserId, getCurrentOrgId } from '@/lib/auth';
@@ -82,7 +82,7 @@ export async function POST(req: Request) {
       .slice(0, 8000);
 
     // Get current week key (e.g., "2025-W15")
-    const weekKey = getWeekIdentifier(new Date());
+    const weekKey = getWeekKey(getDefaultOffset());
     console.log(`Generating content for week: ${weekKey}`);
     
     // Build context with week + website content (for versioning)
@@ -107,20 +107,20 @@ export async function POST(req: Request) {
       )
       .limit(1);
 
-    // if (existingBatch) {
-    //   console.log('Batch already exists for this week.');
-    //   return NextResponse.json({
-    //     success: false,
-    //     message: 'Batch already exists for this week.',
-    //     batchId: existingBatch.batchId,
-    //   }, { status: 200 }); // ← 200 OK so frontend can handle gracefully
+    if (existingBatch) {
+      console.log('Batch already exists for this week.');
+      return NextResponse.json({
+        success: false,
+        message: 'Batch already exists for this week.',
+        batchId: existingBatch.batchId,
+      }, { status: 200 }); // ← 200 OK so frontend can handle gracefully
 
-    //     // Option B: Force regenerate by deleting old batch
-    //     // await db.delete(posts).where(eq(posts.batchId, existingBatch.batchId));
-    //     // Then continue to create new batch
-    // }
+        // Option B: Force regenerate by deleting old batch
+        // await db.delete(posts).where(eq(posts.batchId, existingBatch.batchId));
+        // Then continue to create new batch
+    }
 
-  
+
     const times = product
         ? Array.isArray(product.publishTimes)
           ? product.publishTimes
@@ -272,8 +272,6 @@ export async function POST(req: Request) {
     } else {
       console.log("No new future slots available for generation in this week block.");
     }
-
-
 
   } catch (error) {
     console.error('Content Calendar Generation Failed:', error);

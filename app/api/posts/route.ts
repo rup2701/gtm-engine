@@ -15,8 +15,9 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const productId = searchParams.get('productId');
   const weekKey = searchParams.get('weekKey'); // "2026-W36"
-  // const batchId = searchParams.get('batchId');
-  const batchId = 'c60fb074-1312-4278-8b6f-8418b09c3dd3';
+  
+  const batchId = searchParams.get('batchId');
+  console.log('Fetching posts for productId:', productId, 'weekKey:', weekKey, 'batchId:', batchId);
 
   if (!productId) {
     return NextResponse.json({ error: 'productId required' }, { status: 400 });

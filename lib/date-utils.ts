@@ -24,35 +24,8 @@ export function getNextWeekDate(day: string): string {
   return targetDate.toISOString().split('T')[0];
 }
 
-export function getWeekIdentifier(date: Date): string {
-  const d = new Date(date);
-  const year = d.getFullYear();
-  
-  // Find the exact day of the year (1-365)
-  const start = new Date(year, 0, 0);
-  const diff = d.getTime() - start.getTime();
-  const oneDay = 1000 * 60 * 60 * 24;
-  const dayOfYear = Math.floor(diff / oneDay);
-  
-  // Calculate a clean grid week number matching your generation engine
-  const weekNo = Math.ceil((dayOfYear + start.getDay() + 1) / 7);
-  
-  return `${year}-W${String(weekNo).padStart(2, '0')}`;
-}
+// (removed: getWeekIdentifier — superseded by getWeekKey)
 
-// ISO Week calculation for calendar viewing (not content generation)
-export function getCalendarWeekKey(date: Date): string {
-  const year = date.getFullYear();
-  const jan4 = new Date(year, 0, 4);
-  const jan4Day = (jan4.getDay() + 6) % 7;
-  const firstMonday = new Date(jan4);
-  firstMonday.setDate(jan4.getDate() - jan4Day);
-
-  const diffDays = (date.getTime() - firstMonday.getTime()) / 86400000;
-  const week = Math.floor(diffDays / 7) + 1;
-
-  return `${year}-W${String(week).padStart(2, '0')}`;
-}
 
 export function getMondayDate(offset: number): Date {
   const now = new Date();
@@ -62,6 +35,29 @@ export function getMondayDate(offset: number): Date {
   monday.setDate(diff + offset * 7);
   monday.setHours(0, 0, 0, 0);
   return monday;
+}
+
+// ─── Single source of truth for week identity ────────────────────
+// ISO-8601 week key for a week offset (0 = current week, 1 = next,
+// -1 = previous). Anchored to the week's Monday and computed with
+// UTC-noon math so DST transitions can't truncate the week number.
+// Both content generation and calendar fetching MUST use this.
+export function getWeekKey(offset: number): string {
+  const monday = getMondayDate(offset);
+  return getISOWeekKey(monday);
+}
+
+function getISOWeekKey(date: Date): string {
+  // Work in UTC at noon to avoid DST edge cases.
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12));
+  // ISO week: week containing the year's first Thursday is week 1.
+  const dayNum = (d.getUTCDay() + 6) % 7; // Mon=0 … Sun=6
+  d.setUTCDate(d.getUTCDate() - dayNum + 3); // shift to Thursday of this week
+  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+  const firstDayNum = (firstThursday.getUTCDay() + 6) % 7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDayNum + 3);
+  const week = 1 + Math.round((d.getTime() - firstThursday.getTime()) / (7 * 86400000));
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
 }
 
 // Default offset: weekends → next week, weekdays → current week
