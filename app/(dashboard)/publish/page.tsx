@@ -501,14 +501,14 @@ export default function StagingPage() {
                                   >
                                     ❌ Drop
                                   </button>
-                                  {!isManualPlatform && isPast && (
+                                  {/* {!isManualPlatform && isPast && ( */}
                                     <button
                                       onClick={() => handleFireNow(post.id)}
                                       className="text-xs px-2 py-1 bg-[var(--brand-soft)] text-[var(--brand-hover)] rounded hover:bg-[var(--brand-tint-hover)] transition"
                                     >
                                       <Send className="w-3 h-3 inline" /> Fire Now
                                     </button>
-                                  )}
+                                  {/* )} */}
                                 </>
                               )}
 

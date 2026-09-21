@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { CalendarDays, LayoutGrid, LogOut, Settings, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { BarChart3, CalendarDays, LayoutGrid, LogOut, Settings, SlidersHorizontal, Sparkles } from 'lucide-react';
 
 type DashboardSidebarProps = {
   activeProduct: string | null;
@@ -18,6 +18,7 @@ export default function DashboardSidebar({
     { href: `/dashboard?productId=${activeProduct}`, label: 'Dashboard', icon: LayoutGrid },
     { href: `/generate?productId=${activeProduct}`, label: 'Generate', icon: Sparkles },
     { href: `/publish?productId=${activeProduct}`, label: 'Publish', icon: CalendarDays },
+    { href: `/analytics?productId=${activeProduct}`, label: 'Analytics', icon: BarChart3 },
     { href: `/settings?productId=${activeProduct}`, label: 'Settings', icon: Settings },
   ];
 

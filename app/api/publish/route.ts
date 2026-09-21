@@ -76,28 +76,47 @@ export async function POST(request: NextRequest) {
         // 🔄 Handle sliding-window rotation if token is expired
         if (isExpired && twitterAccount.refresh_token) {
           console.log(`[Twitter Worker] Token expired or expiring soon. Refreshing...`);
-          
-          const newTokens = await refreshTwitterToken(twitterAccount.refresh_token);
-          
-          // Calculate new expiration epoch time
-          const newExpiresAt = Math.floor(Date.now() / 1000) + newTokens.expires_in;
 
-          // Update the record in Neon
-          await db
-            .update(accounts)
-            .set({
-              access_token: newTokens.access_token,
-              refresh_token: newTokens.refresh_token ?? twitterAccount.refresh_token, // Fallback if a new one isn't issued
-              expires_at: newExpiresAt,
-            })
-            .where(
-              and(
-                eq(accounts.userId, post.userId),
-                eq(accounts.provider, "twitter")
-              )
+          try {
+            const newTokens = await refreshTwitterToken(twitterAccount.refresh_token);
+
+            // Calculate new expiration epoch time
+            const newExpiresAt = Math.floor(Date.now() / 1000) + newTokens.expires_in;
+
+            // Update the record in Neon
+            await db
+              .update(accounts)
+              .set({
+                access_token: newTokens.access_token,
+                refresh_token: newTokens.refresh_token ?? twitterAccount.refresh_token, // Fallback if a new one isn't issued
+                expires_at: newExpiresAt,
+              })
+              .where(
+                and(
+                  eq(accounts.userId, post.userId),
+                  eq(accounts.provider, "twitter")
+                )
+              );
+
+            activeToken = newTokens.access_token;
+          } catch (refreshError) {
+            // Dead refresh token (X rotates them on every use). Surface a clear
+            // reconnect error and mark the post failed instead of a generic 500.
+            console.error('[Twitter Worker] Refresh failed — reconnect required:', refreshError);
+
+            await db
+              .update(posts)
+              .set({ status: 'failed', updatedAt: new Date() })
+              .where(eq(posts.id, postId));
+
+            return NextResponse.json(
+              {
+                error: 'Your X connection has expired. Please disconnect and reconnect X in Settings, then retry.',
+                code: 'TWITTER_RECONNECT_REQUIRED',
+              },
+              { status: 401 }
             );
-
-          activeToken = newTokens.access_token;
+          }
         }
 
         // 🚀 Dispatch to X API
@@ -151,13 +170,13 @@ export async function POST(request: NextRequest) {
         throw new Error(`Unknown platform: ${post.platform}`);
     }
 
-    // 5. Update post status
+    // 5. Update post status + persist platform IDs for metrics polling
     await db.update(posts)
       .set({
         status: 'published',
         publishedAt: new Date(),
-        // analytics: result.analytics || {},
-        // updatedAt: new Date(),
+        analytics: result.analytics || {},
+        updatedAt: new Date(),
       })
       .where(eq(posts.id, postId));
 
