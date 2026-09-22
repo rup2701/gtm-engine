@@ -117,13 +117,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         .set({ organizationId })
         .where(eq(users.id, userId));
 
-      // Create Starter Subscription
+      // New OAuth users select and confirm a plan after reaching the dashboard.
       await db.insert(subscriptions).values({
         organizationId,
         tier: 'starter',
         productLimit: 1,
         ragLimit: 1,
-        status: 'active',
+        status: 'pending',
+        billingProvider: 'paddle',
       });
     }
   },

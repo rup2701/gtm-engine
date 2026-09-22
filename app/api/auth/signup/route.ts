@@ -3,14 +3,22 @@ import bcrypt from 'bcryptjs';
 import { db } from '@/db';
 import { users, organizations, subscriptions } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { PADDLE_PLANS, type PaddleTier } from '@/lib/billing/paddle';
 
 export async function POST(req: Request) {
   try {
-    const { email, password, name } = await req.json();
+    const { email, password, name, tier = 'starter' } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     }
+
+    if (!Object.hasOwn(PADDLE_PLANS, tier)) {
+      return NextResponse.json({ error: 'Invalid plan selected' }, { status: 400 });
+    }
+
+    const selectedTier = tier as PaddleTier;
+    const plan = PADDLE_PLANS[selectedTier];
 
     const [existing] = await db
       .select()
@@ -42,18 +50,17 @@ export async function POST(req: Request) {
       organizationId: orgId,
     });
 
-    // 3. Create the initial 14-day Starter trial
+    // 3. Hold the selected plan until the authenticated dashboard opens checkout.
     await db.insert(subscriptions).values({
       organizationId: orgId,
-      tier: 'starter',
-      productLimit: 1,
-      ragLimit: 1,
-      status: 'trialing',
+      tier: selectedTier,
+      productLimit: plan.productLimit,
+      ragLimit: plan.ragLimit,
+      status: 'pending',
       billingProvider: 'paddle',
-      trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
     });
 
-    return NextResponse.json({ success: true, userId, orgId });
+    return NextResponse.json({ success: true, userId, orgId, tier: selectedTier });
   } catch (error) {
     console.error('Signup error:', error);
     return NextResponse.json({ error: 'Signup failed' }, { status: 500 });

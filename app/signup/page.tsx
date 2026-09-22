@@ -3,6 +3,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import LinkedInButton from '../components/ui/LinkedInButton';
+import GoogleSignInButton from '../components/ui/GoogleSignInButton';
+
+type Tier = 'starter' | 'pro' | 'agency';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -11,6 +14,11 @@ export default function SignupPage() {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [tier] = useState<Tier>(() => {
+    if (typeof window === 'undefined') return 'starter';
+    const requestedTier = new URLSearchParams(window.location.search).get('plan');
+    return requestedTier === 'pro' || requestedTier === 'agency' ? requestedTier : 'starter';
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +28,7 @@ export default function SignupPage() {
     const res = await fetch('/api/auth/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name }),
+      body: JSON.stringify({ email, password, name, tier }),
     });
 
     const data = await res.json();
@@ -37,17 +45,18 @@ export default function SignupPage() {
       redirect: false,
     });
 
-    router.push('/generate');
+    router.push(`/dashboard?plan=${data.tier}`);
   };
 
   return (
     <div className="gtm-canvas flex min-h-screen items-center justify-center px-6">
       <form onSubmit={handleSubmit} className="glass w-full max-w-md space-y-4 rounded-2xl px-6 py-12 ring-1 ring-black/5 shadow-[0_24px_70px_-12px_rgba(16,24,40,0.25)]">
         <h1 className="text-xl text-center font-medium text-[#111827] mb-6">
-          Welcome to DispatchOS
+          Create your DispatchOS account
         </h1>
 
-        <LinkedInButton label="Sign up with LinkedIn" />
+        <GoogleSignInButton callbackUrl={`/dashboard?plan=${tier}`} label="Sign up with Google" />
+        <LinkedInButton callbackUrl={`/dashboard?plan=${tier}`} label="Sign up with LinkedIn" />
 
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
@@ -96,7 +105,7 @@ export default function SignupPage() {
           disabled={loading}
           className="w-full rounded-xl bg-[var(--brand)] py-3 font-bold font-mono text-white transition-all hover:bg-[var(--brand-hover)] disabled:opacity-50"
         >
-          {loading ? 'Creating...' : 'Create Account →'}
+          {loading ? 'Creating account...' : 'Create account →'}
         </button>
 
 

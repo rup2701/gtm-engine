@@ -2,11 +2,17 @@
 'use client';
 import { signIn } from 'next-auth/react';
 
-export default function LinkedInButton({ label = 'Continue with LinkedIn' }) {
+export default function LinkedInButton({
+  label = 'Continue with LinkedIn',
+  callbackUrl = '/dashboard',
+}: {
+  label?: string;
+  callbackUrl?: string;
+}) {
   return (
     <button
       type="button"
-      onClick={() => signIn('linkedin', { callbackUrl: '/dashboard' })}
+      onClick={() => signIn('linkedin', { callbackUrl })}
       className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 transition-colors hover:border-[#00b377] hover:bg-gray-50"
     >
       <svg className="w-4 h-4" viewBox="0 0 24 24" fill="#0A66C2">

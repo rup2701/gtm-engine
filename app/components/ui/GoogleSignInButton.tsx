@@ -2,10 +2,17 @@
 
 import { signIn } from "next-auth/react";
 
-export default function GoogleSignInButton() {
+export default function GoogleSignInButton({
+  label = 'Continue with Google',
+  callbackUrl = '/dashboard',
+}: {
+  label?: string;
+  callbackUrl?: string;
+}) {
   return (
     <button
-      onClick={() => signIn("google")}
+      type="button"
+      onClick={() => signIn("google", { callbackUrl })}
       className="flex w-full max-w-sm items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-colors duration-200 hover:bg-gray-50"
     >
       {/* Official Google G Logo Icon */}
@@ -27,7 +34,7 @@ export default function GoogleSignInButton() {
           d="M12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.33 0 3.27 2.69 1.305 6.61l3.96 3.155A7.033 7.033 0 0 1 12 4.909z"
         />
       </svg>
-      <span>Continue with Google</span>
+      <span>{label}</span>
     </button>
   );
 }

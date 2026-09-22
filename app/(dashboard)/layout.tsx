@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
-import { products } from '@/db/schema';
+import { products, subscriptions } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import DashboardLayoutClient from '@/app/components/DashboardLayoutClient';
 
@@ -14,9 +14,12 @@ export default async function DashboardLayout({
   if (!session?.user?.id) redirect('/login');
 
   const orgId = session.user.organizationId;
-  const userProducts = orgId
-    ? await db.select().from(products).where(eq(products.organizationId, orgId))
-    : [];
+  const [userProducts, subscription] = orgId
+    ? await Promise.all([
+        db.select().from(products).where(eq(products.organizationId, orgId)),
+        db.query.subscriptions.findFirst({ where: eq(subscriptions.organizationId, orgId) }),
+      ])
+    : [[], undefined];
 
   const activeProduct = userProducts[0] ?? null;
 
@@ -27,6 +30,9 @@ export default async function DashboardLayout({
         name: p.name,
       }))}
       initialProduct={activeProduct ? { id: activeProduct.id, name: activeProduct.name } : null}
+      pendingPlan={subscription?.status === 'pending'
+        ? { organizationId: orgId!, tier: subscription.tier }
+        : null}
     >
       {children}
     </DashboardLayoutClient>

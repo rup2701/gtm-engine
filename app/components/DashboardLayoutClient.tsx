@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import DashboardSidebar from '@/app/components/DashboardSidebar';
 import TopNav from '@/app/components/TopNav';
+import PlanSelectionModal from '@/app/components/PlanSelectionModal';
 
 type ProductOption = {
   id: string;
@@ -12,12 +13,14 @@ type ProductOption = {
 type DashboardLayoutClientProps = {
   products: ProductOption[];
   initialProduct: ProductOption | null;
+  pendingPlan: { organizationId: string; tier: string } | null;
   children: React.ReactNode;
 };
 
 export default function DashboardLayoutClient({
   products,
   initialProduct,
+  pendingPlan,
   children,
 }: DashboardLayoutClientProps) {
   const [activeProduct, setActiveProduct] = useState<ProductOption | null>(
@@ -37,6 +40,12 @@ export default function DashboardLayoutClient({
           {children}
         </main>
       </div>
+      {pendingPlan && (
+        <PlanSelectionModal
+          organizationId={pendingPlan.organizationId}
+          initialTier={pendingPlan.tier === 'pro' || pendingPlan.tier === 'agency' ? pendingPlan.tier : 'starter'}
+        />
+      )}
     </div>
   );
 }
