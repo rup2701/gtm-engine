@@ -7,6 +7,7 @@ import { getCurrentUserId, getCurrentOrgId } from "@/lib/auth";
 import { ProfileForm } from "./profile-form";
 import Link from "next/link";
 import { OrgNameForm } from "./org-name-form";
+import { BillingPlans } from "./BillingPlans";
 
 
 const TABS = [
@@ -80,18 +81,39 @@ export default async function AccountPage({
 
       {/* ── Subscription ────────────────────────────────────── */}
       {activeTab === "subscription" && (
-        <section className="space-y-2">
+        <section className="space-y-6">
           {subscription ? (
-            <>
-              <p className="text-sm">
-                Plan: <strong>{subscription.tier ?? subscription.status}</strong>
-              </p>
-              <p className="text-sm text-gray-500">Status: {subscription.status}</p>
-            </>
+            <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm text-gray-500">Current plan</p>
+                  <p className="text-lg font-semibold capitalize text-gray-900">{subscription.tier}</p>
+                </div>
+                <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium capitalize text-emerald-700 ring-1 ring-inset ring-emerald-600/15">
+                  {subscription.status}
+                </span>
+              </div>
+              {subscription.trialEndsAt && subscription.status === "trialing" && (
+                <p className="mt-3 text-sm text-gray-500">
+                  Your trial ends on {subscription.trialEndsAt.toLocaleDateString()}.
+                </p>
+              )}
+            </div>
           ) : (
             <p className="text-sm text-gray-500">No active subscription.</p>
           )}
-          {/* Billing portal / upgrade CTA goes here post-MVP */}
+          <BillingPlans
+            organizationId={organizationId}
+            currentTier={subscription?.tier ?? ""}
+            currentStatus={subscription?.status ?? ""}
+            billingSubscriptionId={subscription?.billingSubscriptionId}
+            clientToken={process.env.PADDLE_CLIENT_TOKEN}
+            priceIds={{
+              starter: process.env.PADDLE_STARTER_PRICE_ID,
+              pro: process.env.PADDLE_PRO_PRICE_ID,
+              agency: process.env.PADDLE_AGENCY_PRICE_ID,
+            }}
+          />
         </section>
       )}
 

@@ -162,6 +162,27 @@
       "when": 1789497215801,
       "tag": "0022_glorious_miracleman",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790084893726,
+      "tag": "0023_gigantic_major_mapleleaf",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790085112000,
+      "tag": "0024_normalize_billing_provider",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790085200000,
+      "tag": "0025_unique_subscription_organization",
+      "breakpoints": true
     }
   ]
 }

@@ -42,13 +42,15 @@ export async function POST(req: Request) {
       organizationId: orgId,
     });
 
-    // 3. Create free subscription
+    // 3. Create the initial 14-day Starter trial
     await db.insert(subscriptions).values({
       organizationId: orgId,
       tier: 'starter',
       productLimit: 1,
       ragLimit: 1,
-      status: 'active',
+      status: 'trialing',
+      billingProvider: 'paddle',
+      trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
     });
 
     return NextResponse.json({ success: true, userId, orgId });

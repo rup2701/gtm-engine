@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, boolean, integer, real, jsonb, json, primaryKey } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, boolean, integer, real, jsonb, json, primaryKey, uniqueIndex } from 'drizzle-orm/pg-core';
 import type { AdapterAccountType } from "next-auth/adapters";
 
 // --- Your Existing Users Table (Updated to support NextAuth fields) ---
@@ -147,11 +147,19 @@ export const subscriptions = pgTable('subscriptions', {
   tier: varchar('tier', { length: 20 }).notNull(), // starter, pro, agency
   productLimit: integer('product_limit').notNull(), // 1, 3, 999
   ragLimit: integer('rag_limit').notNull(), // 1, 10, 999
-  status: varchar('status', { length: 20 }).default('active').notNull(), // active, canceled, expired
-  stripeId: varchar('stripe_id', { length: 255 }),
+  status: varchar('status', { length: 20 }).default('trialing').notNull(), // trialing, active, canceled, expired, past_due
+  billingProvider: varchar('billing_provider', { length: 20 }).default('paddle').notNull(),
+  billingCustomerId: varchar('billing_customer_id', { length: 255 }),
+  billingSubscriptionId: varchar('billing_subscription_id', { length: 255 }),
+  billingPriceId: varchar('billing_price_id', { length: 255 }),
+  trialEndsAt: timestamp('trial_ends_at'),
+  currentPeriodEnd: timestamp('current_period_end'),
+  canceledAt: timestamp('canceled_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => [
+  uniqueIndex('subscriptions_organization_id_unique').on(table.organizationId),
+]);
 
 
 export const userConfig = pgTable('user_config', {
