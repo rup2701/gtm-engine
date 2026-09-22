@@ -42,6 +42,5 @@ export async function POST() {
   if (!response.ok) {
     return NextResponse.json({ error: 'Paddle could not schedule cancellation.' }, { status: response.status });
   }
-
   return NextResponse.json({ success: true });
 }
