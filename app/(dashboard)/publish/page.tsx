@@ -63,6 +63,7 @@ export default function StagingPage() {
   const [weekData, setWeekData] = useState<WeekData | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState('');
@@ -198,12 +199,20 @@ export default function StagingPage() {
   };
 
   const handleFireNow = async (postId: string) => {
-    await updatePostStatus(postId, 'queued');
-    await fetch('/api/publish', {
+    setPublishError(null);
+    const res = await fetch('/api/publish', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ postId }),
     });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setPublishError(data.error || 'Failed to publish this post. Please try again.');
+      fetchWeekData(weekOffset);
+      return;
+    }
+
     fetchWeekData(weekOffset);
   };
 

@@ -8,7 +8,7 @@ import { posts, accounts } from '@/db/schema';
 import { and, eq, gte } from 'drizzle-orm';
 import { fetchLinkedInMetrics } from '@/lib/publishers/linkedin';
 import { fetchTwitterMetrics } from '@/lib/publishers/twitter';
-import refreshTwitterToken from '@/lib/utils/refreshTwitterToken';
+import { getValidTwitterAccessToken, TwitterRefreshPendingError } from '@/lib/auth/twitterToken';
 
 export async function GET(request: NextRequest) {
   // Vercel cron protection
@@ -29,6 +29,9 @@ export async function GET(request: NextRequest) {
 
   let updated = 0;
   let failed = 0;
+  // Multiple posts for the same user shouldn't each trigger their own
+  // refresh attempt within a single cron run.
+  const twitterTokenCache = new Map<string, string>();
 
   for (const post of publishedPosts) {
     try {
@@ -45,30 +48,17 @@ export async function GET(request: NextRequest) {
       if (!account?.access_token) continue;
 
       if (post.platform === 'twitter' && platformData.tweetId) {
-        let token = account.access_token;
-        const nowSec = Math.floor(Date.now() / 1000);
-        const isExpired = account.expires_at
-          ? nowSec >= account.expires_at - 120
-          : true;
-
-        if (isExpired && account.refresh_token) {
+        let token = twitterTokenCache.get(post.userId);
+        if (!token) {
           try {
-            const newTokens = await refreshTwitterToken(account.refresh_token);
-            token = newTokens.access_token;
-            await db
-              .update(accounts)
-              .set({
-                access_token: newTokens.access_token,
-                refresh_token: newTokens.refresh_token ?? account.refresh_token,
-                expires_at: nowSec + newTokens.expires_in,
-              })
-              .where(
-                and(eq(accounts.userId, post.userId), eq(accounts.provider, 'twitter'))
-              );
-          } catch (refreshError) {
-            // Dead refresh token — user must reconnect X. Skip this post
-            // rather than failing the entire metrics run.
-            console.error(`[metrics cron] Twitter refresh failed for user ${post.userId}:`, refreshError);
+            token = await getValidTwitterAccessToken(post.userId);
+            twitterTokenCache.set(post.userId, token);
+          } catch (tokenError) {
+            if (tokenError instanceof TwitterRefreshPendingError) {
+              console.log(`[metrics cron] Twitter refresh in progress for user ${post.userId}, will retry next run.`);
+            } else {
+              console.error(`[metrics cron] Twitter token unavailable for user ${post.userId}:`, tokenError);
+            }
             failed++;
             continue;
           }

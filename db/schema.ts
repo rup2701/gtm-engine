@@ -36,6 +36,15 @@ export const accounts = pgTable(
     expires_at: integer("expires_at"), // Unix timestamp of expiration
     token_type: text("token_type"),
     scope: text("scope"),
+
+    // Race-safe refresh: claimed atomically so concurrent callers can't
+    // both consume the same rotating refresh_token (Twitter invalidates
+    // the old one the instant a new one is issued).
+    refreshLockAt: timestamp("refresh_lock_at"),
+    // Set when a refresh attempt is rejected by the provider (dead/revoked
+    // token) rather than a transient/race failure — this is the only case
+    // that genuinely requires the user to reconnect.
+    needsReauth: boolean("needs_reauth").default(false).notNull(),
   },
   (account) => [
     {
