@@ -1,6 +1,7 @@
 // components/EditableField.tsx
 'use client';
 import { useState } from 'react';
+import { Pencil } from 'lucide-react';
 
 export default function EditableField({
   label,
@@ -32,10 +33,10 @@ export default function EditableField({
   };
 
   return (
-    <div className="grid grid-cols-[180px_1fr] gap-4 py-3 border-b border-gray-100 items-start">
+    <div className="grid grid-cols-1 gap-2 py-3 border-b border-gray-100 sm:grid-cols-[180px_1fr] sm:items-start sm:gap-4">
       <span className="text-md text-gray-500">{label}</span>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         {editing ? (
           <>
             {multiline ? (
@@ -56,7 +57,7 @@ export default function EditableField({
             )}
 
             {changed && (
-              <>
+              <div className="flex gap-2">
                 <button
                   onClick={handleSave}
                   disabled={saving}
@@ -70,25 +71,19 @@ export default function EditableField({
                 >
                   Cancel
                 </button>
-              </>
+              </div>
             )}
           </>
         ) : (
-          <>
-            <span
-              onClick={() => setEditing(true)}
-              className="flex-1 text-md text-gray-800 cursor-text hover:text-[#00b377] transition-colors"
-            >
-              {value || '—'}
-            </span>
-            <button
-              onClick={() => setEditing(true)}
-              className="text-xs text-gray-400 hover:text-[#00b377]"
-              aria-label={`Edit ${label}`}
-            >
-              ↻
-            </button>
-          </>
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            aria-label={`Edit ${label}`}
+            className="group flex w-full items-start justify-between gap-3 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-left text-md text-gray-800 transition hover:border-[#00b377] hover:bg-emerald-50/40"
+          >
+            <span className="flex-1 whitespace-pre-wrap">{value || '—'}</span>
+            <Pencil className="mt-0.5 h-2.5 w-2.5 flex-shrink-0 text-gray-400 transition-colors group-hover:text-[#00b377]" />
+          </button>
         )}
       </div>
     </div>

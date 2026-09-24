@@ -37,8 +37,8 @@ export default function PillEditor({
   };
 
   return (
-    <div className="grid grid-cols-[180px_1fr] gap-4 py-3 border-b border-gray-100 items-start">
-      <span className="text-md text-gray-500 pt-1">{label}</span>
+    <div className="grid grid-cols-1 gap-2 py-3 border-b border-gray-100 sm:grid-cols-[180px_1fr] sm:items-start sm:gap-4">
+      <span className="text-md text-gray-500 sm:pt-1">{label}</span>
 
       <div className="flex flex-wrap items-center gap-2">
         {values.map((v) => (
