@@ -4,7 +4,11 @@ export default async function refreshTwitterToken(refreshToken: string) {
     `${process.env.TWITTER_CLIENT_ID}:${process.env.TWITTER_CLIENT_SECRET}`
   ).toString("base64");
 
-  const response = await fetch("https://api.twitter.com/oauth2/token", {
+  // https://api.twitter.com/oauth2/token (no /2/) is X's legacy v1.1
+  // app-only bearer endpoint — it only accepts grant_type=client_credentials
+  // and rejects refresh_token requests. The v2 OAuth2 endpoint below is the
+  // one that actually understands refresh_token grants.
+  const response = await fetch("https://api.x.com/2/oauth2/token", {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
