@@ -112,20 +112,32 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
           frequency, times, channels, rawText, timeZone
         }),
       });
-      const { productId } = await saveRes.json();
+      const saveData = await saveRes.json();
+      if (!saveRes.ok || !saveData.productId) {
+        throw new Error(saveData.error || 'Failed to save product.');
+      }
+      const { productId } = saveData;
 
-      // 2. Generate content
-      await fetch('/api/generate', {
+      // 2. Generate content — best-effort; the publish calendar's own
+      // empty state handles a week with nothing generated yet.
+      const generateRes = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId }),
       });
+      if (!generateRes.ok) {
+        const generateData = await generateRes.json().catch(() => ({}));
+        console.error('Content generation failed:', generateData.error);
+      }
 
-      // 3. Redirect
+      // 3. Redirect — refresh too, since /dashboard and /publish share a
+      // layout and the product-count gate would otherwise keep showing
+      // the stale (pre-creation) server data via the router cache.
       router.push(`/publish?productId=${productId}`);
+      router.refresh();
     } catch (err) {
       console.error(err);
-      alert('Something went wrong.');
+      alert(err instanceof Error ? err.message : 'Something went wrong.');
     } finally {
       setLoading(false);
     }

@@ -8,6 +8,7 @@ import { db } from '@/db';
 import { posts } from '@/db/schema';
 import { and, eq, gte, desc } from 'drizzle-orm';
 import { getCurrentUserId } from '@/lib/auth';
+import { isValidUuid } from '@/lib/utils/uuid';
 
 export async function GET(request: NextRequest) {
   const userId = await getCurrentUserId();
@@ -18,6 +19,9 @@ export async function GET(request: NextRequest) {
   const productId = request.nextUrl.searchParams.get('productId');
   if (!productId) {
     return NextResponse.json({ error: 'productId required' }, { status: 400 });
+  }
+  if (!isValidUuid(productId)) {
+    return NextResponse.json({ error: 'Invalid productId' }, { status: 400 });
   }
 
   const days = Number(request.nextUrl.searchParams.get('days') ?? 30);

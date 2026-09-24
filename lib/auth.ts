@@ -8,6 +8,7 @@ import { db } from '@/db';
 import { users, organizations, subscriptions, accounts, sessions, verificationTokens } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
+import { notifyFounder } from '@/lib/email';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   // 1. Hook up the adapter to manage core user/account tracking automatically
@@ -126,6 +127,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         status: 'pending',
         billingProvider: 'paddle',
       });
+
+      await notifyFounder(
+        `🚀 New DispatchOS signup: ${email}`,
+        `<p>${email} signed up via OAuth.</p>`
+      );
     }
   },
 

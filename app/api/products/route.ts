@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const {
       brandName, description, icp, tone, categories, url,
-      frequency, times, channels, autoPublish = true, rawText, timezone
+      frequency, times, channels, autoPublish = true, rawText, timeZone
     } = body;
 
     if (!brandName || !Array.isArray(times) || !Array.isArray(channels)) {
@@ -26,9 +26,11 @@ export async function POST(req: Request) {
     }
     // Save the timezone string to the user's organization row
     const orgId = session!.user.organizationId!;
-    await db.update(organizations)
-      .set({ timezone: timezone })
-      .where(eq(organizations.id, orgId));
+    if (timeZone) {
+      await db.update(organizations)
+        .set({ timezone: timeZone })
+        .where(eq(organizations.id, orgId));
+    }
 
     const productId = crypto.randomUUID();
     await db.insert(products).values({

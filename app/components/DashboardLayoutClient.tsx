@@ -4,6 +4,7 @@ import { useState } from 'react';
 import DashboardSidebar from '@/app/components/DashboardSidebar';
 import TopNav from '@/app/components/TopNav';
 import PlanSelectionModal from '@/app/components/PlanSelectionModal';
+import AddProductModal from '@/app/components/AddProductModal';
 
 type ProductOption = {
   id: string;
@@ -45,6 +46,12 @@ export default function DashboardLayoutClient({
           organizationId={pendingPlan.organizationId}
           initialTier={pendingPlan.tier === 'pro' || pendingPlan.tier === 'agency' ? pendingPlan.tier : 'starter'}
         />
+      )}
+      {!pendingPlan && products.length === 0 && (
+        // Every page under (dashboard) assumes at least one product exists.
+        // Block the shell here instead of letting individual pages crash on
+        // a missing product.
+        <AddProductModal onClose={() => {}} />
       )}
     </div>
   );

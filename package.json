@@ -27,6 +27,7 @@
     "p-limit": "^7.3.2",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "resend": "^6.28.1",
     "uuid": "^14.0.2"
   },
   "devDependencies": {

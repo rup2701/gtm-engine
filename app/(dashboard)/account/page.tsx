@@ -90,12 +90,17 @@ export default async function AccountPage({
                   <p className="text-lg font-semibold capitalize text-gray-900">{subscription.tier}</p>
                 </div>
                 <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium capitalize text-emerald-700 ring-1 ring-inset ring-emerald-600/15">
-                  {subscription.status}
+                  {subscription.status === "early_access" ? "90 days free" : subscription.status}
                 </span>
               </div>
               {subscription.trialEndsAt && subscription.status === "trialing" && (
                 <p className="mt-3 text-sm text-gray-500">
                   Your trial ends on {subscription.trialEndsAt.toLocaleDateString()}.
+                </p>
+              )}
+              {subscription.earlyAccessEndsAt && subscription.status === "early_access" && (
+                <p className="mt-3 text-sm text-gray-500">
+                  Your free early access ends on {subscription.earlyAccessEndsAt.toLocaleDateString()}.
                 </p>
               )}
             </div>

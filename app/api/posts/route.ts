@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { organizations, posts } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { getCurrentOrgId, getCurrentUserId } from '@/lib/auth';
+import { isValidUuid } from '@/lib/utils/uuid';
 
 export async function GET(request: NextRequest) {
   const userId = await getCurrentUserId();
@@ -21,6 +22,9 @@ export async function GET(request: NextRequest) {
 
   if (!productId) {
     return NextResponse.json({ error: 'productId required' }, { status: 400 });
+  }
+  if (!isValidUuid(productId)) {
+    return NextResponse.json({ error: 'Invalid productId' }, { status: 400 });
   }
 
   if (!weekKey && !batchId) {

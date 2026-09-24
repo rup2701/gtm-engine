@@ -156,12 +156,13 @@ export const subscriptions = pgTable('subscriptions', {
   tier: varchar('tier', { length: 20 }).notNull(), // starter, pro, agency
   productLimit: integer('product_limit').notNull(), // 1, 3, 999
   ragLimit: integer('rag_limit').notNull(), // 1, 10, 999
-  status: varchar('status', { length: 20 }).default('trialing').notNull(), // trialing, active, canceled, expired, past_due
+  status: varchar('status', { length: 20 }).default('trialing').notNull(), // trialing, active, canceled, expired, past_due, pending, early_access
   billingProvider: varchar('billing_provider', { length: 20 }).default('paddle').notNull(),
   billingCustomerId: varchar('billing_customer_id', { length: 255 }),
   billingSubscriptionId: varchar('billing_subscription_id', { length: 255 }),
   billingPriceId: varchar('billing_price_id', { length: 255 }),
   trialEndsAt: timestamp('trial_ends_at'),
+  earlyAccessEndsAt: timestamp('early_access_ends_at'), // EARLY20: 90 free days, tracked separately from a Paddle trial
   currentPeriodEnd: timestamp('current_period_end'),
   canceledAt: timestamp('canceled_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -169,6 +170,33 @@ export const subscriptions = pgTable('subscriptions', {
 }, (table) => [
   uniqueIndex('subscriptions_organization_id_unique').on(table.organizationId),
 ]);
+
+// Singleton counter for the EARLY20 promo. Claiming is a single atomic
+// UPDATE ... WHERE claimed < limit_count, so concurrent claims can never
+// oversell the cap (same compare-and-swap principle as the Twitter token fix).
+export const earlyAccessCounter = pgTable('early_access_counter', {
+  id: integer('id').primaryKey().default(1),
+  claimed: integer('claimed').default(0).notNull(),
+  limitCount: integer('limit_count').default(20).notNull(),
+});
+
+// Audit trail + guard against the same organization claiming twice.
+export const earlyAccessClaims = pgTable('early_access_claims', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .references(() => organizations.id)
+    .notNull()
+    .unique(),
+  claimedAt: timestamp('claimed_at').defaultNow().notNull(),
+});
+
+export const waitlist = pgTable('waitlist', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id').references(() => organizations.id),
+  email: varchar('email', { length: 255 }).notNull(),
+  requestedTier: varchar('requested_tier', { length: 20 }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
 
 
 export const userConfig = pgTable('user_config', {
@@ -213,9 +241,9 @@ export const products = pgTable('products', {
   
   name: varchar('name', { length: 100 }).notNull(),
   website: varchar('website', { length: 255 }),
-  description: varchar('description', { length: 300 }),
-  icp: varchar('icp', { length: 300 }),
-  tone: varchar('tone', { length: 200 }),
+  description: text('description'),
+  icp: text('icp'),
+  tone: text('tone'),
   categories: text('categories'), // JSON array
   frequencyMin: integer('frequency_min').default(3),
   frequencyMax: integer('frequency_max').default(5),

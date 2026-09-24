@@ -77,6 +77,11 @@ export default function PlanSelectionModal({ organizationId, initialTier }: Plan
   const [config, setConfig] = useState<CheckoutConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
+  const [earlyAccessCode, setEarlyAccessCode] = useState('');
+  const [claiming, setClaiming] = useState(false);
+  const [earlyAccessFull, setEarlyAccessFull] = useState(false);
+  const [waitlisted, setWaitlisted] = useState(false);
+  const [joiningWaitlist, setJoiningWaitlist] = useState(false);
 
   useEffect(() => {
     fetch('/api/billing/paddle/config')
@@ -139,6 +144,50 @@ export default function PlanSelectionModal({ organizationId, initialTier }: Plan
     paddleScript.addEventListener('error', () => setError('Unable to load Paddle checkout.'), { once: true });
   };
 
+  const claimEarlyAccess = async () => {
+    if (!earlyAccessCode.trim()) return;
+    setClaiming(true);
+    setError(null);
+    setEarlyAccessFull(false);
+    try {
+      const response = await fetch('/api/early-access/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: earlyAccessCode.trim() }),
+      });
+      const data = await response.json();
+      if (response.status === 409 && data.full) {
+        setEarlyAccessFull(true);
+        return;
+      }
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to redeem this code.');
+      }
+      window.location.reload();
+    } catch (claimError) {
+      setError(claimError instanceof Error ? claimError.message : 'Unable to redeem this code.');
+    } finally {
+      setClaiming(false);
+    }
+  };
+
+  const joinWaitlist = async () => {
+    setJoiningWaitlist(true);
+    try {
+      const response = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestedTier: selectedTier }),
+      });
+      if (!response.ok) throw new Error('Unable to join the waitlist right now.');
+      setWaitlisted(true);
+    } catch (waitlistError) {
+      setError(waitlistError instanceof Error ? waitlistError.message : 'Unable to join the waitlist right now.');
+    } finally {
+      setJoiningWaitlist(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/35 p-4 backdrop-blur-sm">
       <section className="max-h-[calc(100vh-2rem)] w-full max-w-5xl overflow-y-auto rounded-2xl bg-white p-6 ring-1 ring-black/5 shadow-[0_24px_70px_-12px_rgba(16,24,40,0.35)]">
@@ -147,6 +196,47 @@ export default function PlanSelectionModal({ organizationId, initialTier }: Plan
           <p className="mt-2 text-sm text-gray-500">
             Start your 14-day trial. A payment method is required, and you can cancel before the trial ends.
           </p>
+        </div>
+
+        <div className="mt-5 rounded-xl bg-zinc-50 p-4 ring-1 ring-inset ring-black/5">
+          {waitlisted ? (
+            <p className="text-sm text-emerald-700">
+              You're on the waitlist — we'll email you if a free spot opens up. You can still start a paid plan below.
+            </p>
+          ) : earlyAccessFull ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-gray-600">Early access is full — want to be notified if a spot opens?</p>
+              <button
+                type="button"
+                onClick={joinWaitlist}
+                disabled={joiningWaitlist}
+                className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {joiningWaitlist ? 'Joining...' : 'Join the waitlist'}
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
+              <label htmlFor="early-access-code" className="text-sm font-medium text-gray-700">
+                Have an early access code?
+              </label>
+              <input
+                id="early-access-code"
+                type="text"
+                value={earlyAccessCode}
+                onChange={(event) => setEarlyAccessCode(event.target.value)}
+                className="rounded-xl border border-black/10 px-3 py-1.5 text-sm uppercase tracking-wide focus:border-[var(--brand)] focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={claimEarlyAccess}
+                disabled={claiming || !earlyAccessCode.trim()}
+                className="rounded-xl bg-[var(--brand)] px-4 py-1.5 text-sm font-medium text-white transition hover:bg-[var(--brand-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {claiming ? 'Checking...' : 'Claim'}
+              </button>
+            </div>
+          )}
         </div>
 
         {error && (

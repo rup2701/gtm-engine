@@ -14,12 +14,16 @@ export default function DashboardSidebar({
 }: DashboardSidebarProps) {
   const pathname = usePathname();
 
+  // Omit productId entirely when there's no active product yet — passing the
+  // literal string "null" crashes downstream pages that query by UUID.
+  const productQuery = activeProduct ? `?productId=${activeProduct}` : '';
+
   const navItems = [
-    { href: `/dashboard?productId=${activeProduct}`, label: 'Dashboard', icon: LayoutGrid },
-    { href: `/generate?productId=${activeProduct}`, label: 'Generate', icon: Sparkles },
-    { href: `/publish?productId=${activeProduct}`, label: 'Publish', icon: CalendarDays },
-    { href: `/analytics?productId=${activeProduct}`, label: 'Analytics', icon: BarChart3 },
-    { href: `/settings?productId=${activeProduct}`, label: 'Settings', icon: Settings },
+    { href: `/dashboard${productQuery}`, label: 'Dashboard', icon: LayoutGrid },
+    { href: `/generate${productQuery}`, label: 'Generate', icon: Sparkles },
+    { href: `/publish${productQuery}`, label: 'Publish', icon: CalendarDays },
+    { href: `/analytics${productQuery}`, label: 'Analytics', icon: BarChart3 },
+    { href: `/settings${productQuery}`, label: 'Settings', icon: Settings },
   ];
 
   return (

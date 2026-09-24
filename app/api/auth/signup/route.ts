@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { users, organizations, subscriptions } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { PADDLE_PLANS, type PaddleTier } from '@/lib/billing/paddle';
+import { notifyFounder } from '@/lib/email';
 
 export async function POST(req: Request) {
   try {
@@ -59,6 +60,11 @@ export async function POST(req: Request) {
       status: 'pending',
       billingProvider: 'paddle',
     });
+
+    await notifyFounder(
+      `🚀 New DispatchOS signup: ${email}`,
+      `<p>${email} signed up with credentials (requested plan: ${selectedTier}).</p>`
+    );
 
     return NextResponse.json({ success: true, userId, orgId, tier: selectedTier });
   } catch (error) {

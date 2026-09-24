@@ -45,9 +45,10 @@ export default function TopNav({
     };
   }, [open]);
 
+  const productQuery = activeProduct?.id ? `?productId=${activeProduct.id}` : '';
   const navigation = [
-    { href: `/generate?productId=${activeProduct?.id}`, label: 'Generate', icon: Sparkles },
-    { href: `/publish?productId=${activeProduct?.id}`, label: 'Publish', icon: CalendarDays },
+    { href: `/generate${productQuery}`, label: 'Generate', icon: Sparkles },
+    { href: `/publish${productQuery}`, label: 'Publish', icon: CalendarDays },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
   
@@ -58,7 +59,7 @@ export default function TopNav({
       {/* Center: Product switcher */}
       <div ref={switcherRef} className="relative z-50 flex items-center gap-2">
       <Link
-        href={`/dashboard?productId=${activeProduct?.id || ''}`}
+        href={`/dashboard${productQuery}`}
         className="flex items-center gap-3"
         aria-label="dispatchOS home"
       >

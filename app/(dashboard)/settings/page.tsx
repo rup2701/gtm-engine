@@ -2,7 +2,8 @@ import { getCurrentOrgId, getCurrentUserId } from "@/lib/auth";
 import { db } from "@/db";
 import { accounts, products } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
-import { redirect, notFound } from "next/navigation";
+import { redirect } from "next/navigation";
+import { isValidUuid } from "@/lib/utils/uuid";
 import IntegrationButtons from "@/app/components/ui/IntegrationButtons";
 import { DistributionForm } from "@/app/components/DistributionForm";
 import { ChannelSelector } from "./ChannelSelector";
@@ -18,9 +19,10 @@ export default async function SettingsPage({
   const { productId } = await searchParams;
   const organizationId = await getCurrentOrgId();
 
-  // Resolve the product being configured — always scoped to the user
- // Resolve the product being configured — always scoped to the org
-  const currentProduct = productId
+  // Resolve the product being configured — always scoped to the org.
+  // Ignore an invalid/stale productId (e.g. "null" from a missing active
+  // product) rather than passing it straight into a uuid column lookup.
+  const currentProduct = isValidUuid(productId)
     ? await db.query.products.findFirst({
         where: and(
           eq(products.id, productId),
@@ -31,7 +33,7 @@ export default async function SettingsPage({
         where: eq(products.organizationId, organizationId), // fallback: org's first product
       });
 
-  if (!currentProduct) notFound();
+  if (!currentProduct) redirect("/dashboard?addProduct=true");
 
   const [linkedinAccount, twitterAccount] = await Promise.all([
     db.query.accounts.findFirst({

@@ -190,6 +190,20 @@
       "when": 1790085300000,
       "tag": "0026_account_refresh_lock",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1790085400000,
+      "tag": "0027_early_access_waitlist",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1790085500000,
+      "tag": "0028_widen_product_text_columns",
+      "breakpoints": true
     }
   ]
 }

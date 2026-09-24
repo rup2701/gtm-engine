@@ -13,6 +13,7 @@ import { getCurrentUserId, getCurrentOrgId } from '@/lib/auth';
 import { buildContentPrompt } from '@/lib/prompts/buildContentPrompt';
 import { contentResponseSchema } from '@/lib/prompts/contentSchema';
 import { calculateGlobalPostSchedule } from '@/lib/date-utils';
+import { isValidUuid } from '@/lib/utils/uuid';
 
 // const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
@@ -44,6 +45,9 @@ export async function POST(req: Request) {
 
     if (!productId ) {
       return NextResponse.json({ error: 'productId  required' }, { status: 400 });
+    }
+    if (!isValidUuid(productId)) {
+      return NextResponse.json({ error: 'Invalid productId' }, { status: 400 });
     }
     console.log(`Generating content for productId: ${productId} by userId: ${userId}`);
 
