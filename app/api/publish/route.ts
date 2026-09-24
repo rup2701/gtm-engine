@@ -127,10 +127,12 @@ export async function POST(request: NextRequest) {
     }
 
     // 5. Update post status + persist platform IDs for metrics polling
+    const publishedAt = new Date();
+    
     await db.update(posts)
       .set({
         status: 'published',
-        publishedAt: new Date(),
+        publishedAt,
         analytics: result.analytics || {},
         updatedAt: new Date(),
       })
@@ -141,6 +143,7 @@ export async function POST(request: NextRequest) {
       postId: post.id,
       platform: post.platform,
       url: result.url,
+      publishedAt
     });
 
   } catch (error) {

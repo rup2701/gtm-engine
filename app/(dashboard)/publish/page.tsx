@@ -16,8 +16,9 @@ type Post = {
   category: string;
   content: string;
   editedContent: string | null;
-  status: 'draft' | 'queued' | 'hold' | 'dropped' | 'published' | 'failed';
+  status: 'draft' | 'queued' | 'hold' | 'dropped' | 'publishing' | 'published' | 'failed';
   publishedAt: string | null;
+  url: string | null;
 };
 
 type WeekData = {
@@ -31,6 +32,8 @@ type WeekData = {
     dropped: number;
     published: number;
     draft: number;
+    failed: number;
+    publishing: number;
   };
 };
 
@@ -144,13 +147,57 @@ export default function StagingPage() {
 // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [weekOffset, searchParams]);
 
-  const updatePostStatus = async (postId: string, status: string) => {
+  
+function applyPostPatch(
+  weekData: WeekData,
+  postId: string,
+  patch: Partial<Post>
+  ): WeekData {
+    const oldPost = weekData.posts.find(p => p.id === postId);
+    if (!oldPost) return weekData;
+
+    const updated = { ...oldPost, ...patch };
+
+    const posts = weekData.posts.map(p => (p.id === postId ? updated : p));
+
+    const groupedByDay = Object.fromEntries(
+      Object.entries(weekData.groupedByDay).map(([day, dayPosts]) => [
+        day,
+        dayPosts.map(p => (p.id === postId ? updated : p)),
+      ])
+    );
+
+    let stats = weekData.stats;
+    if (patch.status && patch.status !== oldPost.status) {
+      stats = {
+        ...weekData.stats,
+        [oldPost.status]: Math.max(0, weekData.stats[oldPost.status] - 1),
+        [patch.status]: (weekData.stats[patch.status] ?? 0) + 1,
+      };
+    }
+
+    return { ...weekData, posts, groupedByDay, stats };
+  }
+
+  const updatePostStatus = async (postId: string, status: Post['status']) => {
+    const prevStatus = weekData?.posts.find(p => p.id === postId)?.status;
+    if (!prevStatus) return;
+
+    // optimistic update
+    setWeekData(prev => prev && applyPostPatch(prev, postId, { status }));
+
     const res = await fetch(`/api/posts/${postId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
     });
-    if (res.ok) fetchWeekData(weekOffset);
+
+    if (!res.ok) {
+      // roll back
+      setWeekData(prev => prev && applyPostPatch(prev, postId, { status: prevStatus }));
+      const data = await res.json().catch(() => ({}));
+      setPublishError(data.error || 'Failed to update post status. Please try again.');
+    }
   };
 
   const updatePostContent = async (postId: string, content: string) => {
@@ -200,6 +247,15 @@ export default function StagingPage() {
 
   const handleFireNow = async (postId: string) => {
     setPublishError(null);
+
+    setWeekData(prev => prev && { ...prev, posts: prev.posts.map(p =>
+      p.id === postId ? { ...p, status: 'publishing' } : p
+    ), groupedByDay: Object.fromEntries(
+      Object.entries(prev.groupedByDay).map(([day, dayPosts]) => [
+        day, dayPosts.map(p => p.id === postId ? { ...p, status: 'publishing' } : p),
+      ])
+    )});
+
     const res = await fetch('/api/publish', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -209,11 +265,16 @@ export default function StagingPage() {
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setPublishError(data.error || 'Failed to publish this post. Please try again.');
-      fetchWeekData(weekOffset);
+      setWeekData(prev => prev && applyPostPatch(prev, postId, { status: 'queued' }));
       return;
     }
 
-    fetchWeekData(weekOffset);
+    const { url, publishedAt } = await res.json();
+    setWeekData(prev => prev && applyPostPatch(prev, postId, {
+      status: 'published',
+      publishedAt,
+      url,
+    }));
   };
 
   const maxForwardOffset = getMaxForwardOffset();
@@ -518,7 +579,7 @@ export default function StagingPage() {
                                       <Send className="w-3 h-3 inline" /> Fire Now
                                     </button>
                                   )}
-                                </>
+                               </>
                               )}
 
                               {post.status === 'hold' && (
