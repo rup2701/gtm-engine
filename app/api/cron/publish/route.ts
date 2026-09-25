@@ -2,10 +2,11 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { posts, accounts } from '@/db/schema';
-import { eq, and, lte, isNull, ne } from 'drizzle-orm';
+import { eq, and, lte, isNull, ne, gte } from 'drizzle-orm';
 import { publishToTwitter } from '@/lib/publishers/twitter';
 import { publishToLinkedIn } from '@/lib/publishers/linkedin';
 import { getValidTwitterAccessToken, TwitterReauthRequiredError, TwitterRefreshPendingError } from '@/lib/auth/twitterToken';
+import { subMinutes } from 'date-fns';
 
 // NOTE: scoped to a single CRON_USER_ID (early-stage, not yet multi-tenant).
 // The /api/publish route (manual "Fire Now") is the multi-tenant path today.
@@ -19,13 +20,13 @@ export async function POST(request: Request) {
 
   const now = new Date();
 
-  // 1. Find pending posts across ALL users
   const pendingPosts = await db.select()
     .from(posts)
     .where(
       and(
         eq(posts.status, 'queued'),
         lte(posts.scheduledAt, now),
+        gte(posts.scheduledAt, subMinutes(now, 20)),
         isNull(posts.publishedAt),
         ne(posts.platform, 'reddit'),
       )
