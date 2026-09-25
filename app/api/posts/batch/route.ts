@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import { db } from '@/db';
 import { posts } from '@/db/schema';
 import { getCurrentUserId } from '@/lib/auth';
@@ -26,6 +26,7 @@ export async function PATCH(request: NextRequest) {
         eq(posts.weekKey, weekKey),
         eq(posts.userId, userId),
         eq(posts.status, 'draft'),
+        ne(posts.platform, 'reddit'),
       ))
       .returning({ id: posts.id });
 

@@ -67,6 +67,7 @@ export default function StagingPage() {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
+  const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState('');
@@ -277,6 +278,16 @@ function applyPostPatch(
     }));
   };
 
+  const handleCopyPost = async (post: Post) => {
+    try {
+      await navigator.clipboard.writeText(post.editedContent || post.content);
+      setCopiedPostId(post.id);
+      window.setTimeout(() => setCopiedPostId(null), 1800);
+    } catch {
+      setPublishError('Could not copy this post. Please select and copy its text manually.');
+    }
+  };
+
   const maxForwardOffset = getMaxForwardOffset();
 
   // ─── Loading ────────────────────────────────────────────────────
@@ -367,6 +378,20 @@ function applyPostPatch(
           </button>
         </div>
       </div>
+
+      {publishError && (
+        <div className="mb-6 flex items-start justify-between gap-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800 ring-1 ring-inset ring-amber-600/15">
+          <span>{publishError}</span>
+          <button
+            type="button"
+            onClick={() => setPublishError(null)}
+            aria-label="Dismiss message"
+            className="text-amber-700 hover:text-amber-950"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* ─── Content ──────────────────────────────────────────────── */}
       {!hasPosts ? (
@@ -537,15 +562,17 @@ function applyPostPatch(
                             <div className="flex flex-wrap items-center gap-1 mt-2">
                               {post.status === 'draft' && (
                                 <>
-                                  <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
-                                    📝 Draft
+                                  <span className={`text-xs px-2 py-1 rounded ${isManualPlatform ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'}`}>
+                                    {isManualPlatform ? '🖐 Manual post' : '📝 Draft'}
                                   </span>
-                                  <button
-                                    onClick={() => updatePostStatus(post.id, 'queued')}
-                                    className="text-xs px-2 py-1 bg-[var(--brand-tint)] text-[var(--brand-hover)] rounded hover:bg-[var(--brand-tint-hover)] transition"
-                                  >
-                                    ✅ Queue
-                                  </button>
+                                  {!isManualPlatform && (
+                                    <button
+                                      onClick={() => updatePostStatus(post.id, 'queued')}
+                                      className="text-xs px-2 py-1 bg-[var(--brand-tint)] text-[var(--brand-hover)] rounded hover:bg-[var(--brand-tint-hover)] transition"
+                                    >
+                                      ✅ Queue
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() => updatePostStatus(post.id, 'dropped')}
                                     className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100 transition"
@@ -556,15 +583,17 @@ function applyPostPatch(
                               )}
                               {post.status === 'queued' && (
                                 <>
-                                  <span className="text-xs px-2 py-1 bg-[var(--brand-tint)] text-[var(--brand-hover)] rounded">
-                                    ✅ Queued
+                                  <span className={`text-xs px-2 py-1 rounded ${isManualPlatform ? 'bg-amber-100 text-amber-800' : 'bg-[var(--brand-tint)] text-[var(--brand-hover)]'}`}>
+                                    {isManualPlatform ? '🖐 Manual post' : '✅ Queued'}
                                   </span>
-                                  <button
-                                    onClick={() => updatePostStatus(post.id, 'hold')}
-                                    className="text-xs px-2 py-1 bg-amber-50 text-amber-700 rounded hover:bg-amber-100 transition"
-                                  >
-                                    ⏸ Hold
-                                  </button>
+                                  {!isManualPlatform && (
+                                    <button
+                                      onClick={() => updatePostStatus(post.id, 'hold')}
+                                      className="text-xs px-2 py-1 bg-amber-50 text-amber-700 rounded hover:bg-amber-100 transition"
+                                    >
+                                      ⏸ Hold
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() => updatePostStatus(post.id, 'dropped')}
                                     className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100 transition"
@@ -584,12 +613,16 @@ function applyPostPatch(
 
                               {post.status === 'hold' && (
                                 <>
-                                  <button
-                                    onClick={() => updatePostStatus(post.id, 'queued')}
-                                    className="text-xs px-2 py-1 bg-[var(--brand-tint)] text-[var(--brand-hover)] rounded hover:bg-[var(--brand-tint-hover)] transition"
-                                  >
-                                    ✅ Queue
-                                  </button>
+                                  {isManualPlatform ? (
+                                    <span className="text-xs px-2 py-1 bg-amber-100 text-amber-800 rounded">🖐 Manual post</span>
+                                  ) : (
+                                    <button
+                                      onClick={() => updatePostStatus(post.id, 'queued')}
+                                      className="text-xs px-2 py-1 bg-[var(--brand-tint)] text-[var(--brand-hover)] rounded hover:bg-[var(--brand-tint-hover)] transition"
+                                    >
+                                      ✅ Queue
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() => updatePostStatus(post.id, 'dropped')}
                                     className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100 transition"
@@ -597,6 +630,15 @@ function applyPostPatch(
                                     ❌ Drop
                                   </button>
                                 </>
+                              )}
+
+                              {isManualPlatform && post.status !== 'dropped' && (
+                                <button
+                                  onClick={() => handleCopyPost(post)}
+                                  className="text-xs px-2.5 py-1 bg-amber-100 text-amber-900 rounded hover:bg-amber-200 transition"
+                                >
+                                  {copiedPostId === post.id ? '✓ Copied' : 'Copy for Reddit'}
+                                </button>
                               )}
 
                               {post.status === 'published' && (
