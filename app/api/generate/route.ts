@@ -219,20 +219,6 @@ export async function POST(req: Request) {
     const batchId = uuidv4(); // Unique batch identifier for this generation
     // console.log('Generated posts:', genPosts); // Log the first post for debugging
 
-    await db.insert(batches).values({
-      id: batchId,
-      userId,
-      contextHash: contextHash,
-      weekKey: weekKey, // ✅ now exists
-      postCount: genPosts.length,
-      status: 'draft',
-    });
-
-    
-    // Inside your API route
-    // 5. Parse and save generated posts
-    // inside your /api/generate route endpoint handler...
-
     const savedPostsData = genPosts
       .map((post: GeneratedPost) => {
         // 1. Compute the timezone-aware target execution date
@@ -272,8 +258,17 @@ export async function POST(req: Request) {
       })
       .filter(Boolean); // 🎯 Cleanly strips out all the 'null' entries from past slots
 
-    // 3. Only attempt a database write if there are future slots left to save
+    // 3. Only create a batch when future slots are available.
     if (savedPostsData.length > 0) {
+      await db.insert(batches).values({
+        id: batchId,
+        userId,
+        contextHash,
+        weekKey,
+        postCount: savedPostsData.length,
+        status: 'draft',
+      });
+
       const savedPosts = await db
         .insert(posts)
         .values(savedPostsData)
@@ -287,6 +282,10 @@ export async function POST(req: Request) {
         });
     } else {
       console.log("No new future slots available for generation in this week block.");
+      return NextResponse.json(
+        { error: 'No future publishing slots are available for the selected week.', code: 'NO_FUTURE_SLOTS' },
+        { status: 422 },
+      );
     }
 
   } catch (error) {

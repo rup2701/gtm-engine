@@ -68,6 +68,8 @@ export default function StagingPage() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<'generate' | 'queue-all' | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState('');
@@ -214,36 +216,74 @@ function applyPostPatch(
     }
   };
 
-  const handleRegenerate = async (withRescrape: boolean = false) => {
+  const handleRegenerate = () => {
     if (isPastWeek(weekOffset)) {
-      alert('Cannot regenerate past weeks.');
+      setPublishError('Past weeks are read-only and cannot be regenerated.');
       return;
     }
-    if (!confirm('This will wipe all edits. Are you sure?')) return;
+    setConfirmation('generate');
+  };
 
+  const generateWeek = async () => {
+    if (!productId) {
+      setPublishError('Select a product before generating content.');
+      return;
+    }
+    setConfirming(true);
     const weekKey = getWeekKey(weekOffset);
     const res = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ weekKey, rescrape: withRescrape }),
+      body: JSON.stringify({ productId, weekKey }),
     });
-    if (res.ok) fetchWeekData(weekOffset);
+    if (res.ok) {
+      setConfirmation(null);
+      await fetchWeekData(weekOffset, productId);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setPublishError(data.error || 'Failed to generate content. Please try again.');
+      setConfirmation(null);
+    }
+    setConfirming(false);
   };
 
-  const handleQueueAll = async () => {
+  const handleQueueAll = () => {
     if (isPastWeek(weekOffset)) {
-      alert('Cannot queue posts for past weeks.');
+      setPublishError('Past weeks are read-only and cannot be queued.');
       return;
     }
-    if (!confirm('Queue all draft posts for publishing?')) return;
+    setConfirmation('queue-all');
+  };
 
+  const queueAllPosts = async () => {
+    if (!productId) {
+      setPublishError('Select a product before queueing posts.');
+      return;
+    }
+    setConfirming(true);
     const weekKey = getWeekKey(weekOffset);
     const res = await fetch('/api/posts/batch', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ weekKey, action: 'queue-all' }),
+      body: JSON.stringify({ productId, weekKey, action: 'queue-all' }),
     });
-    if (res.ok) fetchWeekData(weekOffset);
+    if (res.ok) {
+      setConfirmation(null);
+      setWeekData((current) => {
+        if (!current) return current;
+        return current.posts.reduce(
+          (next, post) => post.status === 'draft' && post.platform !== 'reddit'
+            ? applyPostPatch(next, post.id, { status: 'queued' })
+            : next,
+          current,
+        );
+      });
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setPublishError(data.error || 'Failed to queue posts. Please try again.');
+      setConfirmation(null);
+    }
+    setConfirming(false);
   };
 
   const handleFireNow = async (postId: string) => {
@@ -409,7 +449,7 @@ function applyPostPatch(
             </p>
             {!isPastWeek(weekOffset) && (
               <button
-                onClick={() => handleRegenerate(false)}
+                onClick={handleRegenerate}
                 className="rounded-xl bg-[var(--brand)] px-6 py-2 font-medium hover:bg-[var(--brand-hover)] transition"
               >
                 <RefreshCw className="w-4 h-4 inline mr-2" />
@@ -693,6 +733,48 @@ function applyPostPatch(
                 </span>
               )}
               <span>Hash: {weekData.posts[0]?.batchId?.slice(0, 8) || '—'}...</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirmation-title"
+            className="w-full max-w-md rounded-2xl bg-white p-6 ring-1 ring-black/5 shadow-[0_24px_70px_-12px_rgba(16,24,40,0.35)]"
+          >
+            <h3 id="confirmation-title" className="text-lg font-semibold text-gray-900">
+              {confirmation === 'generate' ? 'Generate this week’s content?' : 'Queue all ready posts?'}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-gray-600">
+              {confirmation === 'generate'
+                ? 'DispatchOS will create a fresh batch for the selected week and send it to this calendar for review.'
+                : 'All draft posts for this product and week will be queued. Reddit posts remain manual and will not be queued.'}
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmation(null)}
+                disabled={confirming}
+                className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-zinc-100 hover:text-gray-900 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmation === 'generate' ? generateWeek : queueAllPosts}
+                disabled={confirming}
+                className="rounded-xl bg-[var(--brand)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--brand-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {confirming
+                  ? 'Working…'
+                  : confirmation === 'generate'
+                    ? 'Generate content'
+                    : 'Queue all posts'}
+              </button>
             </div>
           </div>
         </div>

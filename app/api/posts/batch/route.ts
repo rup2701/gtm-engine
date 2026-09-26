@@ -3,6 +3,7 @@ import { and, eq, ne } from 'drizzle-orm';
 import { db } from '@/db';
 import { posts } from '@/db/schema';
 import { getCurrentUserId } from '@/lib/auth';
+import { isValidUuid } from '@/lib/utils/uuid';
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -11,11 +12,11 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { weekKey, action } = await request.json();
+    const { productId, weekKey, action } = await request.json();
 
-    if (!weekKey || action !== 'queue-all') {
+    if (!isValidUuid(productId) || !weekKey || action !== 'queue-all') {
       return NextResponse.json(
-        { error: 'weekKey and action=queue-all are required' },
+        { error: 'Valid productId, weekKey, and action=queue-all are required' },
         { status: 400 },
       );
     }
@@ -24,6 +25,7 @@ export async function PATCH(request: NextRequest) {
       .set({ status: 'queued', updatedAt: new Date() })
       .where(and(
         eq(posts.weekKey, weekKey),
+        eq(posts.productId, productId),
         eq(posts.userId, userId),
         eq(posts.status, 'draft'),
         ne(posts.platform, 'reddit'),

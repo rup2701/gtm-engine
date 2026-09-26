@@ -102,6 +102,8 @@ export function calculateGlobalPostSchedule(
   let daysToAdd = 0;
   if (currentDayIndex === 0) {
     daysToAdd = targetOffset;
+  } else if (currentDayIndex === 6) {
+    daysToAdd = targetOffset + 1;
   } else {
     daysToAdd = targetOffset - currentDayIndex;
   }
