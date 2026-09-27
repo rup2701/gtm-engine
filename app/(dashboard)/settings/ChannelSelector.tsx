@@ -7,7 +7,7 @@ const CHANNELS = [
   { id: 'linkedin', label: 'LinkedIn', connectable: true },
   { id: 'twitter', label: 'X (Twitter)', connectable: true },
   { id: 'reddit', label: 'Reddit', connectable: false },
-  { id: 'bluesky', label: 'BlueSky', connectable: true },
+  { id: 'bluesky', label: 'BlueSky', connectable: false },
 ] as const;
 
 export function ChannelSelector({
@@ -43,6 +43,9 @@ export function ChannelSelector({
             </span>
             {needsConnect && (
               <span className="text-xs text-amber-600">connect below to enable</span>
+            )}
+            {id === 'bluesky' && (
+              <span className="text-xs text-gray-400">manual for now</span>
             )}
           </label>
         );

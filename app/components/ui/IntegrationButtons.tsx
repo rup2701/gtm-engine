@@ -84,6 +84,34 @@ export default function IntegrationButtons({ isLinkedInConnected, isTwitterConne
           </button>
         )}
       </div>
+
+      {/* LinkedIn login help stays with its connection control. */}
+      {!isLinkedInConnected && (
+        <div className="-mt-2 text-xs">
+          <button 
+            onClick={() => setShowHelp(!showHelp)}
+            className="font-semibold text-gray-600 underline decoration-gray-300 underline-offset-2 hover:text-gray-900"
+          >
+            {showHelp ? "Hide connection tips" : "Usually log into LinkedIn with Google?"}
+          </button>
+          
+          {showHelp && (
+            <div className="mt-2 rounded-xl bg-amber-50 p-3 leading-relaxed text-amber-800 ring-1 ring-inset ring-amber-600/15">
+              <p className="font-semibold mb-1">Important Note:</p>
+              <p className="mb-2">
+                LinkedIn often hides its Sign in with Google button on external connection screens. If your LinkedIn account doesn&apos;t have a regular password, you will get stuck.
+              </p>
+              <p className="font-semibold mb-1">To fix this before connecting:</p>
+              <ol className="list-decimal pl-4 space-y-1">
+                <li>Go to LinkedIn&apos;s main login page in a separate tab (log out if needed).</li>
+                <li>Click <strong>Forgot password?</strong> to assign a native password to your email.</li>
+                <li>Come back here, click Connect, and type that password manually.</li>
+              </ol>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div>
@@ -112,32 +140,6 @@ export default function IntegrationButtons({ isLinkedInConnected, isTwitterConne
         )}
       </div>
 
-      {/* Pre-emptive help text block */}
-      {!isLinkedInConnected && (
-        <div className="text-xs">
-          <button 
-            onClick={() => setShowHelp(!showHelp)}
-            className="text-gray-400 hover:text-gray-600 underline"
-          >
-            {showHelp ? "Hide connection tips" : "Usually log into LinkedIn with Google?"}
-          </button>
-          
-          {showHelp && (
-            <div className="mt-2 rounded-xl bg-amber-50 p-3 leading-relaxed text-amber-800 ring-1 ring-inset ring-amber-600/15">
-              <p className="font-semibold mb-1">Important Note:</p>
-              <p className="mb-2">
-                LinkedIn often hides its Sign in with Google button on external connection screens. If your LinkedIn account doesn&apos;t have a regular password, you will get stuck.
-              </p>
-              <p className="font-semibold mb-1">To fix this before connecting:</p>
-              <ol className="list-decimal pl-4 space-y-1">
-                <li>Go to LinkedIn&apos;s main login page in a separate tab (log out if needed).</li>
-                <li>Click <strong>Forgot password?</strong> to assign a native password to your email.</li>
-                <li>Come back here, click Connect, and type that password manually.</li>
-              </ol>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
