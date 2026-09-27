@@ -3,6 +3,7 @@ import { db } from '@/db';
 import { subscriptions } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { getCurrentOrgId } from '@/lib/auth';
+import { getPaddleApiBaseUrl, getPaddleApiKey } from '@/lib/billing/paddle';
 
 export async function POST() {
   const organizationId = await getCurrentOrgId();
@@ -20,15 +21,12 @@ export async function POST() {
     return NextResponse.json({ error: 'No Paddle subscription found.' }, { status: 400 });
   }
 
-  const apiKey = process.env.PADDLE_SANDBOX_API_KEY ?? process.env.PADDLE_API_KEY;
+  const apiKey = getPaddleApiKey();
   if (!apiKey) {
-    return NextResponse.json({ error: 'Paddle API is not configured.' }, { status: 500 });
+    return NextResponse.json({ error: 'Paddle API key is not configured for this environment.' }, { status: 503 });
   }
 
-  const apiBase = process.env.PADDLE_ENV === 'production'
-    ? 'https://api.paddle.com'
-    : 'https://sandbox-api.paddle.com';
-  const response = await fetch(`${apiBase}/subscriptions/${subscription.billingSubscriptionId}`, {
+  const response = await fetch(`${getPaddleApiBaseUrl()}/subscriptions/${subscription.billingSubscriptionId}`, {
     method: 'PATCH',
     headers: {
       Authorization: `Bearer ${apiKey}`,

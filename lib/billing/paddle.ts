@@ -8,12 +8,64 @@ export const PADDLE_PLANS = {
 
 export type PaddleTier = keyof typeof PADDLE_PLANS;
 
+export type PaddleEnvironment = 'sandbox' | 'production';
+
+export function getPaddleEnvironment(): PaddleEnvironment {
+  return process.env.PADDLE_ENV === 'production' ? 'production' : 'sandbox';
+}
+
+function envValue(name: string): string | undefined {
+  const value = process.env[name]?.trim();
+  return value || undefined;
+}
+
+export function getPaddlePriceIds(): Record<PaddleTier, string | undefined> {
+  if (getPaddleEnvironment() === 'production') {
+    return {
+      starter: envValue('PADDLE_LIVE_STARTER_PRICE_ID'),
+      pro: envValue('PADDLE_LIVE_PRO_PRICE_ID'),
+      agency: envValue('PADDLE_LIVE_AGENCY_PRICE_ID'),
+    };
+  }
+
+  return {
+    starter: envValue('PADDLE_SANDBOX_STARTER_PRICE_ID') ?? envValue('PADDLE_STARTER_PRICE_ID'),
+    pro: envValue('PADDLE_SANDBOX_PRO_PRICE_ID') ?? envValue('PADDLE_PRO_PRICE_ID'),
+    agency: envValue('PADDLE_SANDBOX_AGENCY_PRICE_ID') ?? envValue('PADDLE_AGENCY_PRICE_ID'),
+  };
+}
+
+export function getPaddleClientToken(): string | undefined {
+  return getPaddleEnvironment() === 'production'
+    ? envValue('PADDLE_LIVE_CLIENT_TOKEN')
+    : envValue('PADDLE_SANDBOX_CLIENT_TOKEN') ?? envValue('PADDLE_CLIENT_TOKEN');
+}
+
+export function getPaddleApiKey(): string | undefined {
+  return getPaddleEnvironment() === 'production'
+    ? envValue('PADDLE_LIVE_API_KEY')
+    : envValue('PADDLE_SANDBOX_API_KEY');
+}
+
+export function getPaddleWebhookSecret(): string | undefined {
+  return getPaddleEnvironment() === 'production'
+    ? envValue('PADDLE_LIVE_WEBHOOK_SECRET')
+    : envValue('PADDLE_SANDBOX_WEBHOOK_SECRET') ?? envValue('PADDLE_WEBHOOK_SECRET');
+}
+
+export function getPaddleApiBaseUrl(): string {
+  return getPaddleEnvironment() === 'production'
+    ? 'https://api.paddle.com'
+    : 'https://sandbox-api.paddle.com';
+}
+
 export function tierFromPriceId(priceId: string | undefined): PaddleTier | null {
   if (!priceId) return null;
+  const prices = getPaddlePriceIds();
   const mapping: Record<string, PaddleTier | undefined> = {
-    [process.env.PADDLE_STARTER_PRICE_ID ?? '']: 'starter',
-    [process.env.PADDLE_PRO_PRICE_ID ?? '']: 'pro',
-    [process.env.PADDLE_AGENCY_PRICE_ID ?? '']: 'agency',
+    [prices.starter ?? '']: 'starter',
+    [prices.pro ?? '']: 'pro',
+    [prices.agency ?? '']: 'agency',
   };
   return mapping[priceId] ?? null;
 }

@@ -1,18 +1,27 @@
 import { NextResponse } from 'next/server';
+import { getPaddleClientToken, getPaddleEnvironment, getPaddlePriceIds } from '@/lib/billing/paddle';
 
 export async function GET() {
-  const clientToken = process.env.PADDLE_CLIENT_TOKEN;
-  if (!clientToken) {
-    return NextResponse.json({ error: 'Paddle checkout is not configured.' }, { status: 503 });
+  const environment = getPaddleEnvironment();
+  const clientToken = getPaddleClientToken();
+  const priceIds = getPaddlePriceIds();
+  const missingPrices = Object.entries(priceIds)
+    .filter(([, priceId]) => !priceId)
+    .map(([tier]) => tier);
+
+  if (!clientToken || missingPrices.length > 0) {
+    return NextResponse.json(
+      {
+        error: `Paddle ${environment} checkout is not fully configured.`,
+        missing: [...(!clientToken ? ['client token'] : []), ...missingPrices.map((tier) => `${tier} price ID`)],
+      },
+      { status: 503 },
+    );
   }
 
   return NextResponse.json({
     clientToken,
-    environment: process.env.PADDLE_ENV === 'production' ? 'production' : 'sandbox',
-    priceIds: {
-      starter: process.env.PADDLE_STARTER_PRICE_ID,
-      pro: process.env.PADDLE_PRO_PRICE_ID,
-      agency: process.env.PADDLE_AGENCY_PRICE_ID,
-    },
+    environment,
+    priceIds,
   });
 }

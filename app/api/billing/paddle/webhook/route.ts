@@ -4,6 +4,7 @@ import { subscriptions } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import {
   PADDLE_PLANS,
+  getPaddleWebhookSecret,
   paddleDate,
   tierFromPriceId,
   verifyPaddleSignature,
@@ -25,7 +26,7 @@ type PaddleEvent = {
 
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
-  const secret = process.env.PADDLE_WEBHOOK_SECRET;
+  const secret = getPaddleWebhookSecret();
   if (!secret || !verifyPaddleSignature(rawBody, request.headers.get('paddle-signature'), secret)) {
     return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
   }
