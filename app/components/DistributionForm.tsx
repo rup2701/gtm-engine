@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { updateDistributionSettings } from "@/app/actions/workspace-settings";
+import { isValidDeliveryTimes, MAX_DELIVERY_SLOTS } from "@/lib/content-limits";
 
 interface ProductData {
   id: string;
@@ -9,8 +10,6 @@ interface ProductData {
   publishTimes: unknown; // typed in schema as json, expected string[]
   platforms: string[] | null;
   autoPublish: boolean | null;
-  frequencyMin: number | null;
-  frequencyMax: number | null;
 }
 
 interface DistributionFormProps {
@@ -20,13 +19,11 @@ interface DistributionFormProps {
 export function DistributionForm({ product }: DistributionFormProps) {
   // 🕒 Parse publish times safely out of your JSON field
   const initialTimes = Array.isArray(product.publishTimes) 
-    ? (product.publishTimes as string[]) 
+    ? (product.publishTimes as string[]).slice(0, MAX_DELIVERY_SLOTS)
     : ['09:00', '13:00', '17:00'];
 
   const [publishTimes, setPublishTimes] = useState<string[]>(initialTimes);
   const [newTime, setNewTime] = useState("");
-  const [frequencyMin, setFrequencyMin] = useState(product.frequencyMin ?? 3);
-  const [frequencyMax, setFrequencyMax] = useState(product.frequencyMax ?? 5);
   const [autoPublish, setAutoPublish] = useState(product.autoPublish ?? true);
   const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -34,7 +31,7 @@ export function DistributionForm({ product }: DistributionFormProps) {
   // ➕ Add a new time chip
   const handleAddTime = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTime) return;
+    if (!newTime || publishTimes.length >= MAX_DELIVERY_SLOTS) return;
     
     // Avoid duplicates and sort them chronologically
     if (!publishTimes.includes(newTime)) {
@@ -46,6 +43,7 @@ export function DistributionForm({ product }: DistributionFormProps) {
 
   // ❌ Remove a time chip
   const handleRemoveTime = (timeToRemove: string) => {
+    if (publishTimes.length <= 1) return;
     setPublishTimes(publishTimes.filter((t) => t !== timeToRemove));
   };
 
@@ -60,8 +58,6 @@ export function DistributionForm({ product }: DistributionFormProps) {
       publishTimes,
       platforms: product.platforms || [],
       autoPublish,
-      frequencyMin,
-      frequencyMax,
     });
 
     setIsSaving(false);
@@ -76,25 +72,34 @@ export function DistributionForm({ product }: DistributionFormProps) {
     <div className="space-y-6 rounded-2xl bg-white p-6 ring-1 ring-black/5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
       
       {/* 🤖 MASTER AUTOMATION TOGGLE */}
-      <div className="flex items-center justify-between border-b border-black/5 pb-4">
+      <div className="flex items-center justify-between border-b border-black/5 pb-4 gap-4">
         <div>
           <label className="text-sm font-semibold block text-foreground">Autonomous Publishing Mode</label>
           <span className="text-xs text-muted-foreground block mt-0.5">
-            When active, the GTM worker pushes ready posts to live channels on schedule without manually clicking "Fire".
+            When on, queued posts publish automatically at their scheduled times. When off, use Fire Now to publish manually.
           </span>
         </div>
-        <button
-          onClick={() => setAutoPublish(!autoPublish)}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-            autoPublish ? "bg-primary" : "bg-muted"
-          }`}
-        >
-          <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${
-              autoPublish ? "translate-x-6" : "translate-x-1"
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={autoPublish}
+            aria-label="Autonomous publishing"
+            onClick={() => setAutoPublish((enabled) => !enabled)}
+            className={`relative inline-flex h-7 w-12 items-center rounded-full ring-1 ring-inset transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${
+              autoPublish ? "bg-emerald-500 ring-emerald-600/30" : "bg-zinc-300 ring-zinc-400/40"
             }`}
-          />
-        </button>
+          >
+            <span
+              className={`h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                autoPublish ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+          <span className={`w-8 text-xs font-semibold ${autoPublish ? "text-emerald-700" : "text-zinc-500"}`}>
+            {autoPublish ? "On" : "Off"}
+          </span>
+        </div>
       </div>
 
       {/* ⏰ POSTING TIMES CHIPS WRAPPER */}
@@ -102,7 +107,7 @@ export function DistributionForm({ product }: DistributionFormProps) {
         <div>
           <label className="text-sm font-semibold text-foreground">Target Delivery Slots</label>
           <span className="text-xs text-muted-foreground block mt-0.5">
-            Exact times during the day when queued content engine outputs look to drop.
+            One post is generated for each slot, Monday through Friday. Up to {MAX_DELIVERY_SLOTS} slots per weekday.
           </span>
         </div>
 
@@ -117,6 +122,7 @@ export function DistributionForm({ product }: DistributionFormProps) {
               <button
                 type="button"
                 onClick={() => handleRemoveTime(time)}
+                disabled={publishTimes.length <= 1}
                 className="text-xs hover:text-destructive transition font-bold"
               >
                 ×
@@ -134,44 +140,12 @@ export function DistributionForm({ product }: DistributionFormProps) {
             />
             <button
               type="submit"
+              disabled={!newTime || publishTimes.length >= MAX_DELIVERY_SLOTS || !isValidDeliveryTimes([...publishTimes, newTime])}
               className="h-8 rounded-lg border border-dashed border-black/10 px-2.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
             >
-              + Add
+              {publishTimes.length >= MAX_DELIVERY_SLOTS ? 'Maximum slots reached' : '+ Add'}
             </button>
           </form>
-        </div>
-      </div>
-
-      {/* 📊 GENERATION BOUNDARIES (FREQUENCY RATIOS) */}
-      <div className="grid grid-cols-2 gap-6 pt-2">
-        <div className="space-y-2">
-          <label className="text-sm font-semibold block text-foreground">Min Weekly Frequency</label>
-          <span className="text-xs text-muted-foreground block -mt-1">
-            Floor baseline for automatic queue generations.
-          </span>
-          <input
-            type="number"
-            min={1}
-            max={frequencyMax}
-            value={frequencyMin}
-            onChange={(e) => setFrequencyMin(parseInt(e.target.value) || 1)}
-            className="w-full rounded-xl border border-black/10 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-semibold block text-foreground">Max Weekly Frequency</label>
-          <span className="text-xs text-muted-foreground block -mt-1">
-            Ceiling limit to prevent platform over-saturation.
-          </span>
-          <input
-            type="number"
-            min={frequencyMin}
-            max={30}
-            value={frequencyMax}
-            onChange={(e) => setFrequencyMax(parseInt(e.target.value) || 5)}
-            className="w-full rounded-xl border border-black/10 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-          />
         </div>
       </div>
 

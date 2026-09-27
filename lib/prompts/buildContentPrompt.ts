@@ -4,8 +4,6 @@ export type ProductContext = {
   icp: string | null;
   tone: string | null;
   categories: string[];
-  frequencyMin: number;
-  frequencyMax: number;
   publishTimes: string[];
   platforms: string[];
   description: string | null;
@@ -30,8 +28,9 @@ ${ctx.categories.join(', ')}
 None in MVP — Phase 2
 
 **Schedule:**
-Generate ${ctx.frequencyMin}-${ctx.frequencyMax} posts per day for 5 days.
-Times: ${ctx.publishTimes.join(', ')}
+Generate exactly one post for each selected delivery time on each weekday (Monday through Friday).
+That is ${ctx.publishTimes.length} posts per weekday, ${ctx.publishTimes.length * 5} posts total before past slots are filtered.
+Use these delivery times in order each weekday: ${ctx.publishTimes.join(', ')}.
 
 **Platforms:**
 ${ctx.platforms.join(', ')}
@@ -44,5 +43,5 @@ ${ctx.platforms.join(', ')}
 - Adapt tone and format per platform (LinkedIn = professional, Twitter/X = punchy, Reddit = conversational)
 
 **Output Format:**
-JSON array with: day, time, platform, category, content, hook`;
+JSON array with exactly one item for every weekday/time combination, using each supplied time exactly once per weekday. Each item has: day, time, platform, category, content, hook.`;
 }

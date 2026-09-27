@@ -1,7 +1,7 @@
 // app/api/cron/publish/route.ts
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { posts, accounts } from '@/db/schema';
+import { posts, accounts, products } from '@/db/schema';
 import { eq, and, lte, isNull, ne, gte } from 'drizzle-orm';
 import { publishToTwitter } from '@/lib/publishers/twitter';
 import { publishToLinkedIn } from '@/lib/publishers/linkedin';
@@ -20,10 +20,12 @@ export async function POST(request: Request) {
 
   const now = new Date();
 
-  const pendingPosts = await db.select()
+  const pendingPosts = await db.select({ post: posts })
     .from(posts)
+    .innerJoin(products, eq(posts.productId, products.id))
     .where(
       and(
+        eq(products.autoPublish, true),
         eq(posts.status, 'queued'),
         lte(posts.scheduledAt, now),
         gte(posts.scheduledAt, subMinutes(now, 20)),
@@ -46,7 +48,7 @@ export async function POST(request: Request) {
   }
 
   const results = [];
-  for (const post of pendingPosts) {
+  for (const { post } of pendingPosts) {
     const userId = post.userId; // ← from the post row now, not the env var
 
     // claim it atomically first (fixes the overlapping-tick race too)

@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { organizations, products, scrapedContent } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { isValidDeliveryTimes } from '@/lib/content-limits';
 
 export async function POST(req: Request) {
   try {
@@ -15,12 +16,18 @@ export async function POST(req: Request) {
     const body = await req.json();
     const {
       brandName, description, icp, tone, categories, url,
-      frequency, times, channels, autoPublish = true, rawText, timeZone
+      times, channels, autoPublish = true, rawText, timeZone
     } = body;
 
     if (!brandName || !Array.isArray(times) || !Array.isArray(channels)) {
       return NextResponse.json(
         { error: 'brandName, times, and channels are required' },
+        { status: 400 },
+      );
+    }
+    if (!isValidDeliveryTimes(times)) {
+      return NextResponse.json(
+        { error: 'Choose 1–5 unique delivery times in 24-hour HH:MM format.' },
         { status: 400 },
       );
     }
@@ -42,8 +49,6 @@ export async function POST(req: Request) {
       icp,
       tone,
       categories: JSON.stringify(categories ?? []),
-      frequencyMin: frequency,
-      frequencyMax: frequency,
       publishTimes: times,
       platforms: channels,
       autoPublish,

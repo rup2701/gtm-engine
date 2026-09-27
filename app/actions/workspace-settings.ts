@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { products } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { isValidDeliveryTimes } from "@/lib/content-limits";
 
 interface UpdateDistributionInput {
   productId: string;
@@ -11,11 +12,16 @@ interface UpdateDistributionInput {
   publishTimes: string[];
   platforms: string[];
   autoPublish: boolean;
-  frequencyMin: number;
-  frequencyMax: number;
 }
 
 export async function updateDistributionSettings(input: UpdateDistributionInput) {
+  if (!isValidDeliveryTimes(input.publishTimes)) {
+    return {
+      success: false,
+      error: "Choose 1–5 unique delivery times in 24-hour HH:MM format.",
+    };
+  }
+
   try {
     // 🔐 Security double-check: ensure the product belongs to the active organization
     await db
@@ -24,8 +30,6 @@ export async function updateDistributionSettings(input: UpdateDistributionInput)
         publishTimes: input.publishTimes,
         platforms: input.platforms,
         autoPublish: input.autoPublish,
-        frequencyMin: input.frequencyMin,
-        frequencyMax: input.frequencyMax,
         updatedAt: new Date(),
       })
       .where(

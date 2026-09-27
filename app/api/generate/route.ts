@@ -13,6 +13,7 @@ import { getCurrentUserId, getCurrentOrgId } from '@/lib/auth';
 import { buildContentPrompt } from '@/lib/prompts/buildContentPrompt';
 import { contentResponseSchema } from '@/lib/prompts/contentSchema';
 import { calculateGlobalPostSchedule } from '@/lib/date-utils';
+import { isValidDeliveryTimes } from '@/lib/content-limits';
 import { isValidUuid } from '@/lib/utils/uuid';
 
 // const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -130,7 +131,7 @@ export async function POST(req: Request) {
     }
     
     // Build context with week + website content (for versioning)
-    const contextString = `${weekKey}:${product.name}:${scrapedContext}: ${product.description}: ${product.icp}: ${product.tone}: ${product.categories}: ${product.frequencyMin}: ${product.frequencyMax}: ${product.publishTimes}: ${product.platforms}`;
+    const contextString = `${weekKey}:${product.name}:${scrapedContext}: ${product.description}: ${product.icp}: ${product.tone}: ${product.categories}: ${product.publishTimes}: ${product.platforms}`;
 
     const contextHash = crypto
       .createHash('sha256')
@@ -152,6 +153,13 @@ export async function POST(req: Request) {
             ? JSON.parse(product.platforms || '[]')
             : []
       : [];
+
+    if (!isValidDeliveryTimes(times)) {
+      return NextResponse.json(
+        { error: 'This product needs 1–5 unique delivery times before content can be generated.', code: 'INVALID_DELIVERY_SLOTS' },
+        { status: 400 },
+      );
+    }
     
     // ...existing code, after platforms is parsed...
     // ...existing code, after platforms is parsed...
@@ -172,8 +180,6 @@ export async function POST(req: Request) {
       icp: product.icp,
       tone: product.tone,
       categories: JSON.parse(product.categories || '[]'),
-      frequencyMin: product.frequencyMin ?? 1,
-      frequencyMax: product.frequencyMax ?? 3,
       publishTimes: times,
       platforms: platforms,
       websiteContext: scrapedContext
@@ -219,8 +225,16 @@ export async function POST(req: Request) {
     const batchId = uuidv4(); // Unique batch identifier for this generation
     // console.log('Generated posts:', genPosts); // Log the first post for debugging
 
+    const seenSlots = new Set<string>();
     const savedPostsData = genPosts
       .map((post: GeneratedPost) => {
+        const slotKey = `${post.day}:${post.time}`;
+        if (!times.includes(post.time) || seenSlots.has(slotKey)) {
+          console.warn(`[Generation] Ignored duplicate or unrequested slot ${slotKey}.`);
+          return null;
+        }
+        seenSlots.add(slotKey);
+
         // 1. Compute the timezone-aware target execution date
         const { scheduledAt, weekKey: computedWeekKey } = calculateGlobalPostSchedule(
           post.day, // 'mon'

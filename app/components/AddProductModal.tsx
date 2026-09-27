@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { extractBrandContext } from '@/lib/context/extractBrandContext';
+import { MAX_DELIVERY_SLOTS } from '@/lib/content-limits';
 
 type Extracted = {
   brandName: string;
@@ -37,16 +38,15 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
   const [newCategory, setNewCategory] = useState('');
 
   // Step 3
-  const [frequency, setFrequency] = useState(3);
   const [times, setTimes] = useState(['09:00', '13:00', '17:00']);
   const [channels, setChannels] = useState(['linkedin', 'twitter']);
 
   const [rawText, setRawText] = useState('');
 
 
-  const handleFrequencyChange = (value: number) => {
-    setFrequency(value);
-    setTimes(DEFAULT_TIMES[value] || ['09:00']);
+  const handleSlotCountChange = (value: number) => {
+    const slotCount = Math.min(MAX_DELIVERY_SLOTS, Math.max(1, value));
+    setTimes(DEFAULT_TIMES[slotCount] || ['09:00']);
   };
 
   const addCategory = () => {
@@ -109,7 +109,7 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           brandName, description, icp, tone, categories, url,
-          frequency, times, channels, rawText, timeZone
+          times, channels, rawText, timeZone
         }),
       });
       const saveData = await saveRes.json();
@@ -289,18 +289,18 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
           <>
             <h2 className="text-xl font-bold mb-2">Set your schedule</h2>
             <p className="text-sm text-gray-500 mb-6">
-              How often should DispatchOS post?
+              Choose up to {MAX_DELIVERY_SLOTS} posting times per weekday.
             </p>
 
             <label className="block text-xs text-gray-600 mb-1">
-              Posts per day: {frequency}
+              Delivery slots per weekday: {times.length}
             </label>
             <input
               type="range"
               min={1}
-              max={5}
-              value={frequency}
-              onChange={(e) => handleFrequencyChange(Number(e.target.value))}
+              max={MAX_DELIVERY_SLOTS}
+              value={times.length}
+              onChange={(e) => handleSlotCountChange(Number(e.target.value))}
               className="w-full mb-4 accent-[#00b377]"
             />
 
