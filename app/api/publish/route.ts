@@ -1,7 +1,7 @@
 // app/api/publish/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { posts, userSettings, accounts } from '@/db/schema';
+import { posts, accounts } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { getCurrentUserId } from '@/lib/auth';
 import { getValidTwitterAccessToken, TwitterReauthRequiredError, TwitterRefreshPendingError } from '@/lib/auth/twitterToken';
@@ -27,16 +27,6 @@ export async function POST(request: NextRequest) {
       .where(and(eq(posts.id, postId), eq(posts.userId, userId)));
     if (!post) {
       return NextResponse.json({ error: 'Post not found' }, { status: 404 });
-    }
-
-    // 2. Get user settings (tokens)
-    const [settings] = await db.select()
-      .from(userSettings)
-      .where(eq(userSettings.userId, userId));
-    
-    
-    if (!settings) {
-      return NextResponse.json({ error: 'No settings found' }, { status: 500 });
     }
 
     // 3. Get the content (use edited version if available)

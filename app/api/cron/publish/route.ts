@@ -2,14 +2,12 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { posts, accounts, products } from '@/db/schema';
-import { eq, and, lte, isNull, ne, gte } from 'drizzle-orm';
+import { eq, and, lte, isNull, isNotNull, ne, gte, exists, sql } from 'drizzle-orm';
 import { publishToTwitter } from '@/lib/publishers/twitter';
 import { publishToLinkedIn } from '@/lib/publishers/linkedin';
 import { getValidTwitterAccessToken, TwitterReauthRequiredError, TwitterRefreshPendingError } from '@/lib/auth/twitterToken';
 import { subMinutes } from 'date-fns';
 
-// NOTE: scoped to a single CRON_USER_ID (early-stage, not yet multi-tenant).
-// The /api/publish route (manual "Fire Now") is the multi-tenant path today.
 export async function POST(request: Request) {
   const cronSecret = process.env.CRON_SECRET;
   const authorization = request.headers.get('authorization');
@@ -31,6 +29,16 @@ export async function POST(request: Request) {
         gte(posts.scheduledAt, subMinutes(now, 20)),
         isNull(posts.publishedAt),
         ne(posts.platform, 'reddit'),
+        exists(
+          db.select({ connected: sql`1` })
+            .from(accounts)
+            .where(and(
+              eq(accounts.userId, posts.userId),
+              eq(accounts.provider, posts.platform),
+              isNotNull(accounts.access_token),
+              ne(accounts.access_token, ''),
+            )),
+        ),
       )
     )
     .limit(25);
