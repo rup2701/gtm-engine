@@ -5,6 +5,7 @@ export type ProductContext = {
   tone: string | null;
   categories: string[];
   publishTimes: string[];
+  platformSchedule: Record<string, string>;
   platforms: string[];
   description: string | null;
 };
@@ -28,12 +29,16 @@ ${ctx.categories.join(', ')}
 None in MVP — Phase 2
 
 **Schedule:**
-Generate exactly one post for each selected delivery time on each weekday (Monday through Friday).
-That is ${ctx.publishTimes.length} posts per weekday, ${ctx.publishTimes.length * 5} posts total before past slots are filtered.
-Use these delivery times in order each weekday: ${ctx.publishTimes.join(', ')}.
+Generate exactly one post for each platform schedule slot below. The schedule is the source of truth.
+Total scheduled posts before past slots are filtered: ${Object.keys(ctx.platformSchedule).length}.
+Selected delivery times: ${ctx.publishTimes.join(', ')}.
 
 **Platforms:**
 ${ctx.platforms.join(', ')}
+
+**Required platform schedule:**
+${Object.entries(ctx.platformSchedule).map(([slot, platform]) => `${slot} → ${platform}`).join('\n')}
+Follow this schedule exactly. Do not substitute or reorder platforms. Reddit is a manual channel and appears only in its assigned slots.
 
 **Content Boundaries:**
 - Never invent case studies, metrics, testimonials, or customer stories
@@ -43,5 +48,5 @@ ${ctx.platforms.join(', ')}
 - Adapt tone and format per platform (LinkedIn = professional, Twitter/X = punchy, Reddit = conversational)
 
 **Output Format:**
-JSON array with exactly one item for every weekday/time combination, using each supplied time exactly once per weekday. Each item has: day, time, platform, category, content, hook.`;
+JSON array with exactly one item for every entry in the required platform schedule. Each item has: day, time, platform, category, content, hook.`;
 }

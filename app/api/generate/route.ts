@@ -15,6 +15,7 @@ import { contentResponseSchema } from '@/lib/prompts/contentSchema';
 import { calculateGlobalPostSchedule } from '@/lib/date-utils';
 import { isValidDeliveryTimes } from '@/lib/content-limits';
 import { isValidUuid } from '@/lib/utils/uuid';
+import { buildPlatformSchedule } from '@/lib/content-schedule';
 
 // const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
@@ -173,6 +174,8 @@ export async function POST(req: Request) {
       );
     }
 
+    const platformSchedule = buildPlatformSchedule(times, platforms, weekKey);
+
     // 3. Build prompt
     const prompt = buildContentPrompt({
       brandName: product.name,
@@ -181,6 +184,7 @@ export async function POST(req: Request) {
       tone: product.tone,
       categories: JSON.parse(product.categories || '[]'),
       publishTimes: times,
+      platformSchedule,
       platforms: platforms,
       websiteContext: scrapedContext
     });
@@ -229,7 +233,8 @@ export async function POST(req: Request) {
     const savedPostsData = genPosts
       .map((post: GeneratedPost) => {
         const slotKey = `${post.day}:${post.time}`;
-        if (!times.includes(post.time) || seenSlots.has(slotKey)) {
+        const scheduledPlatform = platformSchedule[slotKey];
+        if (!times.includes(post.time) || !scheduledPlatform || seenSlots.has(slotKey)) {
           console.warn(`[Generation] Ignored duplicate or unrequested slot ${slotKey}.`);
           return null;
         }
@@ -260,7 +265,7 @@ export async function POST(req: Request) {
           dayOfWeek: post.day, 
           contextHash: contextHash,
           category: post.category,
-          platform: post.platform,
+          platform: scheduledPlatform,
           content: post.content,
           status: 'draft',
           editedContent: null,
