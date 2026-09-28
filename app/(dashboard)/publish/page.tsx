@@ -359,6 +359,7 @@ function applyPostPatch(
 
   const mondayDate = getMondayDate(weekOffset);
   const hasPosts = weekData && weekData.posts.length > 0;
+  const queueAllDisabled = isPastWeek(weekOffset) || !hasPosts || Boolean(weekData?.stats.queued);
 
   return (
     <div className="p-6">
@@ -407,9 +408,10 @@ function applyPostPatch(
 
           <button
             onClick={handleQueueAll}
-            disabled={isPastWeek(weekOffset) || !hasPosts}
+            disabled={queueAllDisabled}
+            title={weekData?.stats.queued ? 'Queue All is unavailable after posts have been queued.' : 'Queue all eligible posts'}
             className={`flex items-center gap-2 px-4 py-2 text-sm rounded-xl transition ${
-              isPastWeek(weekOffset) || !hasPosts
+              queueAllDisabled
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 : 'bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]'
             }`}
