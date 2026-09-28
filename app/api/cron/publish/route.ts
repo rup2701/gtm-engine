@@ -51,6 +51,15 @@ export async function POST(request: Request) {
   for (const { post } of pendingPosts) {
     const userId = post.userId; // ← from the post row now, not the env var
 
+    if (post.platform === 'linkedin') {
+      const linkedinAccount = await getLinkedInAccount(userId);
+      if (!linkedinAccount?.access_token) {
+        console.log(`[cron publish] LinkedIn is not connected for post ${post.id}; leaving it queued.`);
+        results.push({ id: post.id, userId, success: false, error: 'LinkedIn is not connected', retryable: true });
+        continue;
+      }
+    }
+
     // claim it atomically first (fixes the overlapping-tick race too)
     const [claimed] = await db.update(posts)
       .set({ status: 'publishing' })
