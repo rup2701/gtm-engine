@@ -2,9 +2,8 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { signOut } from 'next-auth/react';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
-import { CalendarDays, LogOut, Settings, Sparkles, Zap } from 'lucide-react';
+import { CalendarDays, Settings, Sparkles, UserRound, Zap } from 'lucide-react';
 
 type Product = { id: string; name: string };
 
@@ -126,14 +125,13 @@ export default function TopNav({
             </Link>
           );
         })}
-        <button
-          type="button"
-          onClick={() => signOut({ callbackUrl: '/login' })}
-            className="rounded-xl p-2 text-zinc-400 transition-colors hover:bg-white/70 hover:text-zinc-950"
-          aria-label="Sign out"
+        <Link
+          href="/account?tab=profile"
+          className="rounded-xl p-2 text-zinc-400 transition-colors hover:bg-white/70 hover:text-zinc-950"
+          aria-label="Account profile"
         >
-          <LogOut className="h-4 w-4" />
-        </button>
+          <UserRound className="h-4 w-4" />
+        </Link>
       </nav>
       
       {/* Right: Status + Logout */}

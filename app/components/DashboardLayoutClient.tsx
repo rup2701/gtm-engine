@@ -14,6 +14,8 @@ type ProductOption = {
 type DashboardLayoutClientProps = {
   products: ProductOption[];
   initialProduct: ProductOption | null;
+  userName: string;
+  userEmail: string;
   pendingPlan: { organizationId: string; tier: string } | null;
   children: React.ReactNode;
 };
@@ -21,6 +23,8 @@ type DashboardLayoutClientProps = {
 export default function DashboardLayoutClient({
   products,
   initialProduct,
+  userName,
+  userEmail,
   pendingPlan,
   children,
 }: DashboardLayoutClientProps) {
@@ -36,7 +40,11 @@ export default function DashboardLayoutClient({
         onProductChange={setActiveProduct}
       />
       <div className="flex flex-1 gap-3 overflow-hidden p-3">
-        <DashboardSidebar activeProduct={activeProduct?.id ?? null} />
+        <DashboardSidebar
+          activeProduct={activeProduct?.id ?? null}
+          userName={userName}
+          userEmail={userEmail}
+        />
         <main className="flex-1 overflow-y-auto rounded-2xl bg-white ring-1 ring-black/5 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_12px_32px_-16px_rgba(16,24,40,0.12)]">
           {children}
         </main>
