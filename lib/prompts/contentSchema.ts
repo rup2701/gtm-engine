@@ -19,6 +19,6 @@ export const contentResponseSchema = {
       content: { type: Type.STRING, description: 'Full post text, platform-native' },
       hook: { type: Type.STRING, description: 'First line hook for preview cards' },
     },
-    required: ['day', 'time', 'category', 'platform', 'content'],
+    required: ['day', 'time', 'category', 'platform', 'content', 'hook'],
   },
 };
