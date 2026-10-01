@@ -1,6 +1,7 @@
 'use client';
 
 import { useTransition } from 'react';
+import Link from 'next/link';
 import { togglePlatform } from './actions';
 
 const CHANNELS = [
@@ -17,7 +18,7 @@ export function ChannelSelector({
 }: {
   productId: string;
   platforms: string[];
-  connectedProviders: string[]; // e.g. ['twitter', 'linkedin']
+  connectedProviders: string[];
 }) {
   const [isPending, startTransition] = useTransition();
 
@@ -42,7 +43,12 @@ export function ChannelSelector({
               {label}
             </span>
             {needsConnect && (
-              <span className="text-xs text-amber-600">connect below to enable</span>
+              <Link
+                href="/account?tab=connections"
+                className="text-xs font-medium text-amber-700 underline underline-offset-2 hover:text-amber-900"
+              >
+                Connect in Account Settings → Team
+              </Link>
             )}
             {id === 'bluesky' && (
               <span className="text-xs text-gray-400">manual for now</span>

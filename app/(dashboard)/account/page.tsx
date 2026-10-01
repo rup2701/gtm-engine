@@ -8,12 +8,15 @@ import { ProfileForm } from "./profile-form";
 import Link from "next/link";
 import { OrgNameForm } from "./org-name-form";
 import { BillingPlans } from "./BillingPlans";
+import IntegrationButtons from "@/app/components/ui/IntegrationButtons";
+import { getOrganizationSocialAccount } from "@/lib/social-connections";
 
 
 const TABS = [
   { id: "profile", label: "Profile" },
-  { id: "subscription", label: "Subscription" },
+  { id: "connections", label: "Connections" },
   { id: "team", label: "Team" },
+  { id: "subscription", label: "Subscription" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -44,6 +47,11 @@ export default async function AccountPage({
   ]);
 
   if (!user || !org) redirect("/login");
+
+  const [linkedinAccount, twitterAccount] = await Promise.all([
+    getOrganizationSocialAccount(organizationId, "linkedin"),
+    getOrganizationSocialAccount(organizationId, "twitter"),
+  ]);
 
   return (
     <main className="p-8 max-w-2xl mx-auto space-y-8">
@@ -138,6 +146,30 @@ export default async function AccountPage({
               <span className="text-foreground">{user.name ?? user.email}</span> — you (owner)
             </p>
             <p>Team invitations are coming soon.</p>
+          </div>
+        </section>
+      )}
+
+      {/* ── Connections ─────────────────────────────────────── */}
+      {activeTab === "connections" && (
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold">Social connections</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Connect accounts once for {org.name}. They’re available to every workspace; each workspace chooses where to publish.
+            </p>
+          </div>
+          <div className="rounded-2xl bg-white p-5 ring-1 ring-black/5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] space-y-4">
+            <IntegrationButtons
+              isLinkedInConnected={!!linkedinAccount}
+              isTwitterConnected={!!twitterAccount}
+              isTwitterReauthRequired={twitterAccount?.needsReauth ?? false}
+              canDisconnectLinkedIn={linkedinAccount?.userId === userId}
+              canDisconnectTwitter={twitterAccount?.userId === userId}
+            />
+            <p className="text-xs text-gray-500">
+              Reddit and BlueSky are handled manually and don’t require an account connection.
+            </p>
           </div>
         </section>
       )}

@@ -4,11 +4,12 @@
 // so older posts don't need re-fetching.
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { posts, accounts } from '@/db/schema';
+import { posts, products } from '@/db/schema';
 import { and, eq, gte } from 'drizzle-orm';
 import { fetchLinkedInMetrics } from '@/lib/publishers/linkedin';
 import { fetchTwitterMetrics } from '@/lib/publishers/twitter';
-import { getValidTwitterAccessToken, TwitterRefreshPendingError } from '@/lib/auth/twitterToken';
+import { TwitterRefreshPendingError } from '@/lib/auth/twitterToken';
+import { getOrganizationSocialAccount, getOrganizationTwitterAccessToken } from '@/lib/social-connections';
 
 export async function GET(request: NextRequest) {
   // Vercel cron protection
@@ -23,8 +24,9 @@ export async function GET(request: NextRequest) {
   const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
 
   const publishedPosts = await db
-    .select()
+    .select({ post: posts, organizationId: products.organizationId })
     .from(posts)
+    .innerJoin(products, eq(posts.productId, products.id))
     .where(and(eq(posts.status, 'published'), gte(posts.publishedAt, since)));
 
   let updated = 0;
@@ -33,31 +35,21 @@ export async function GET(request: NextRequest) {
   // refresh attempt within a single cron run.
   const twitterTokenCache = new Map<string, string>();
 
-  for (const post of publishedPosts) {
+  for (const { post, organizationId } of publishedPosts) {
     try {
       const platformData = (post.analytics ?? {}) as Record<string, unknown>;
 
-      const [account] = await db
-        .select()
-        .from(accounts)
-        .where(
-          and(eq(accounts.userId, post.userId), eq(accounts.provider, post.platform))
-        )
-        .limit(1);
-
-      if (!account?.access_token) continue;
-
       if (post.platform === 'twitter' && platformData.tweetId) {
-        let token = twitterTokenCache.get(post.userId);
+        let token = twitterTokenCache.get(organizationId);
         if (!token) {
           try {
-            token = await getValidTwitterAccessToken(post.userId);
-            twitterTokenCache.set(post.userId, token);
+            token = await getOrganizationTwitterAccessToken(organizationId);
+            twitterTokenCache.set(organizationId, token);
           } catch (tokenError) {
             if (tokenError instanceof TwitterRefreshPendingError) {
-              console.log(`[metrics cron] Twitter refresh in progress for user ${post.userId}, will retry next run.`);
+              console.log(`[metrics cron] Twitter refresh in progress for organization ${organizationId}, will retry next run.`);
             } else {
-              console.error(`[metrics cron] Twitter token unavailable for user ${post.userId}:`, tokenError);
+              console.error(`[metrics cron] Twitter token unavailable for organization ${organizationId}:`, tokenError);
             }
             failed++;
             continue;
@@ -89,9 +81,12 @@ export async function GET(request: NextRequest) {
           .where(eq(posts.id, post.id));
         updated++;
       } else if (post.platform === 'linkedin' && platformData.postId) {
+        const linkedinAccount = await getOrganizationSocialAccount(organizationId, 'linkedin');
+        if (!linkedinAccount?.access_token) continue;
+
         const metrics = await fetchLinkedInMetrics(
           platformData.postId as string,
-          account.access_token
+          linkedinAccount.access_token
         );
         if (!metrics) {
           failed++;

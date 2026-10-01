@@ -1,10 +1,11 @@
 // app/api/publish/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { posts, accounts } from '@/db/schema';
+import { posts, accounts, products } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { getCurrentUserId } from '@/lib/auth';
-import { getValidTwitterAccessToken, TwitterReauthRequiredError, TwitterRefreshPendingError } from '@/lib/auth/twitterToken';
+import { getOrganizationSocialAccount, getOrganizationTwitterAccessToken } from '@/lib/social-connections';
+import { TwitterReauthRequiredError, TwitterRefreshPendingError } from '@/lib/auth/twitterToken';
 import { publishToLinkedIn } from '@/lib/publishers/linkedin';
 import { publishToTwitter } from '@/lib/publishers/twitter';
 
@@ -22,12 +23,14 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Get the post
-    const [post] = await db.select()
+    const [postResult] = await db.select({ post: posts, organizationId: products.organizationId })
       .from(posts)
+      .innerJoin(products, eq(posts.productId, products.id))
       .where(and(eq(posts.id, postId), eq(posts.userId, userId)));
-    if (!post) {
+    if (!postResult) {
       return NextResponse.json({ error: 'Post not found' }, { status: 404 });
     }
+    const { post, organizationId } = postResult;
 
     // 3. Get the content (use edited version if available)
     const content = post.editedContent || post.content;
@@ -41,7 +44,7 @@ export async function POST(request: NextRequest) {
       case 'twitter': {
         let activeToken: string;
         try {
-          activeToken = await getValidTwitterAccessToken(post.userId);
+          activeToken = await getOrganizationTwitterAccessToken(organizationId);
         } catch (tokenError) {
           if (tokenError instanceof TwitterReauthRequiredError) {
             await db
@@ -71,16 +74,7 @@ export async function POST(request: NextRequest) {
       }
 
       case 'linkedin': { // Added block scope curly braces to safely contain block-scoped variables
-        const [linkedinAccount] = await db
-          .select()
-          .from(accounts)
-          .where(
-            and(
-              eq(accounts.userId, userId),
-              eq(accounts.provider, "linkedin")
-            )
-          )
-          .limit(1);
+        const linkedinAccount = await getOrganizationSocialAccount(organizationId, 'linkedin');
 
         if (!linkedinAccount || !linkedinAccount.access_token) {
           throw new Error('LinkedIn token not configured');
@@ -101,7 +95,8 @@ export async function POST(request: NextRequest) {
             .set({ providerAccountId: result.analytics.linkedinPersonId })
             .where(
               and(
-                eq(accounts.userId, userId),
+                eq(accounts.userId, linkedinAccount.userId),
+                eq(accounts.providerAccountId, linkedinAccount.providerAccountId),
                 eq(accounts.provider, "linkedin")
               )
             );

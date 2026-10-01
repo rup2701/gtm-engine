@@ -1,11 +1,12 @@
 // app/api/cron/publish/route.ts
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { posts, accounts, products } from '@/db/schema';
+import { posts, accounts, products, users } from '@/db/schema';
 import { eq, and, lte, isNull, isNotNull, ne, gte, exists, sql } from 'drizzle-orm';
 import { publishToTwitter } from '@/lib/publishers/twitter';
 import { publishToLinkedIn } from '@/lib/publishers/linkedin';
-import { getValidTwitterAccessToken, TwitterReauthRequiredError, TwitterRefreshPendingError } from '@/lib/auth/twitterToken';
+import { TwitterReauthRequiredError, TwitterRefreshPendingError } from '@/lib/auth/twitterToken';
+import { getOrganizationSocialAccount, getOrganizationTwitterAccessToken } from '@/lib/social-connections';
 import { subMinutes } from 'date-fns';
 
 export async function POST(request: Request) {
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
 
   const now = new Date();
 
-  const pendingPosts = await db.select({ post: posts })
+  const pendingPosts = await db.select({ post: posts, organizationId: products.organizationId })
     .from(posts)
     .innerJoin(products, eq(posts.productId, products.id))
     .where(
@@ -32,8 +33,9 @@ export async function POST(request: Request) {
         exists(
           db.select({ connected: sql`1` })
             .from(accounts)
+            .innerJoin(users, eq(accounts.userId, users.id))
             .where(and(
-              eq(accounts.userId, posts.userId),
+              eq(users.organizationId, products.organizationId),
               eq(accounts.provider, posts.platform),
               isNotNull(accounts.access_token),
               ne(accounts.access_token, ''),
@@ -43,24 +45,21 @@ export async function POST(request: Request) {
     )
     .limit(25);
 
-  // 2. Cache LinkedIn accounts per user within this run (avoid refetching per post)
+  // 2. Cache LinkedIn accounts per organization within this run.
   const linkedinAccountCache = new Map<string, typeof accounts.$inferSelect | null>();
-  async function getLinkedInAccount(userId: string) {
-    if (linkedinAccountCache.has(userId)) return linkedinAccountCache.get(userId)!;
-    const [account] = await db.select()
-      .from(accounts)
-      .where(and(eq(accounts.userId, userId), eq(accounts.provider, 'linkedin')))
-      .limit(1);
-    linkedinAccountCache.set(userId, account ?? null);
+  async function getLinkedInAccount(organizationId: string) {
+    if (linkedinAccountCache.has(organizationId)) return linkedinAccountCache.get(organizationId)!;
+    const account = await getOrganizationSocialAccount(organizationId, 'linkedin');
+    linkedinAccountCache.set(organizationId, account);
     return account ?? null;
   }
 
   const results = [];
-  for (const { post } of pendingPosts) {
+  for (const { post, organizationId } of pendingPosts) {
     const userId = post.userId; // ← from the post row now, not the env var
 
     if (post.platform === 'linkedin') {
-      const linkedinAccount = await getLinkedInAccount(userId);
+      const linkedinAccount = await getLinkedInAccount(organizationId);
       if (!linkedinAccount?.access_token) {
         console.log(`[cron publish] LinkedIn is not connected for post ${post.id}; leaving it queued.`);
         results.push({ id: post.id, userId, success: false, error: 'LinkedIn is not connected', retryable: true });
@@ -80,12 +79,12 @@ export async function POST(request: Request) {
 
       switch (post.platform) {
         case 'twitter': {
-          const accessToken = await getValidTwitterAccessToken(userId);
+          const accessToken = await getOrganizationTwitterAccessToken(organizationId);
           await publishToTwitter(content, accessToken);
           break;
         }
         case 'linkedin': {
-          const linkedinAccount = await getLinkedInAccount(userId);
+          const linkedinAccount = await getLinkedInAccount(organizationId);
           if (!linkedinAccount?.access_token) {
             throw new Error('LinkedIn is not configured');
           }
@@ -97,8 +96,8 @@ export async function POST(request: Request) {
           if (!linkedinAccount.providerAccountId && result.analytics?.linkedinPersonId) {
             await db.update(accounts)
               .set({ providerAccountId: result.analytics.linkedinPersonId })
-              .where(and(eq(accounts.userId, userId), eq(accounts.provider, 'linkedin')));
-            linkedinAccountCache.set(userId, {
+              .where(and(eq(accounts.userId, linkedinAccount.userId), eq(accounts.provider, 'linkedin')));
+            linkedinAccountCache.set(organizationId, {
               ...linkedinAccount,
               providerAccountId: result.analytics.linkedinPersonId,
             });

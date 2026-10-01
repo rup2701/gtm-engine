@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, MouseEvent } from "react";
+import { useState, useTransition } from "react";
 import { signIn } from "next-auth/react";
 import { disconnectProvider } from "@/app/(dashboard)/settings/actions";
 
@@ -8,11 +8,18 @@ import { disconnectProvider } from "@/app/(dashboard)/settings/actions";
 interface IntegrationButtonsProps {
   isLinkedInConnected: boolean;
   isTwitterConnected: boolean;
-  isDiscordConnected: boolean;
-  isBlueSkyConnected: boolean;
+  isTwitterReauthRequired: boolean;
+  canDisconnectLinkedIn: boolean;
+  canDisconnectTwitter: boolean;
 }
 
-export default function IntegrationButtons({ isLinkedInConnected, isTwitterConnected}: IntegrationButtonsProps) {
+export default function IntegrationButtons({
+  isLinkedInConnected,
+  isTwitterConnected,
+  isTwitterReauthRequired,
+  canDisconnectLinkedIn,
+  canDisconnectTwitter,
+}: IntegrationButtonsProps) {
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -20,8 +27,11 @@ export default function IntegrationButtons({ isLinkedInConnected, isTwitterConne
    const handleConnect = async (provider: string) => {
     setLoadingProvider(provider);
     try {
+      if (provider === "twitter" && isTwitterReauthRequired && canDisconnectTwitter) {
+        await disconnectProvider("twitter");
+      }
       // 🚀 Direct trigger for NextAuth's authentication handlers
-      await signIn(provider, { callbackUrl: "/settings" });
+      await signIn(provider, { callbackUrl: "/account?tab=connections" });
     } catch (error) {
       console.error(`Error connecting to ${provider}:`, error);
       setLoadingProvider(null);
@@ -34,7 +44,7 @@ export default function IntegrationButtons({ isLinkedInConnected, isTwitterConne
       startTransition(async () => {
         try {
           await disconnectProvider("linkedin");
-        } catch (error) {
+        } catch {
           alert("Failed to disconnect account. Please try again.");
         }
       });
@@ -46,7 +56,7 @@ export default function IntegrationButtons({ isLinkedInConnected, isTwitterConne
     startTransition(async () => {
       try {
         await disconnectProvider("twitter");
-      } catch (error) {
+      } catch {
         alert("Failed to disconnect account. Please try again.");
       } finally {
         setLoadingProvider(null);
@@ -67,7 +77,7 @@ export default function IntegrationButtons({ isLinkedInConnected, isTwitterConne
           </div>
         </div>
 
-        {isLinkedInConnected ? (
+        {isLinkedInConnected && canDisconnectLinkedIn ? (
           <button
             onClick={handleDisconnectLinkedIn}
             disabled={isPending || loadingProvider === "linkedin"}
@@ -75,6 +85,8 @@ export default function IntegrationButtons({ isLinkedInConnected, isTwitterConne
           >
             {isPending ? "Disconnecting..." : "Disconnect"}
           </button>
+        ) : isLinkedInConnected ? (
+          <span className="text-xs text-gray-500">Connected by a team member</span>
         ) : (
           <button
             onClick={() => handleConnect("linkedin")}
@@ -117,12 +129,26 @@ export default function IntegrationButtons({ isLinkedInConnected, isTwitterConne
           <div>
             <h4 className="font-medium">𝕏 Twitter Channel</h4>
             <p className="text-xs text-gray-400">
-              {isTwitterConnected  ? "Connected and ready" : "Not connected"}
+              {isTwitterReauthRequired
+                ? "Reconnection required"
+                : isTwitterConnected
+                  ? "Connected and ready"
+                  : "Not connected"}
             </p>
           </div>
         </div>
 
-        {isTwitterConnected ? (
+        {isTwitterConnected && isTwitterReauthRequired && canDisconnectTwitter ? (
+          <button
+            onClick={() => handleConnect("twitter")}
+            disabled={isPending || loadingProvider === "twitter"}
+            className="rounded-xl bg-[#1DA1F2] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#0d8ddb] disabled:opacity-50"
+          >
+            {loadingProvider === "twitter" ? "Reconnecting..." : "Reconnect Account"}
+          </button>
+        ) : isTwitterConnected && isTwitterReauthRequired ? (
+          <span className="text-xs text-gray-500">Reconnect from the account owner</span>
+        ) : isTwitterConnected && canDisconnectTwitter ? (
           <button
             onClick={handleDisconnectTwitter}
             disabled={isPending || loadingProvider === "twitter"}
@@ -130,6 +156,8 @@ export default function IntegrationButtons({ isLinkedInConnected, isTwitterConne
           >
             {isPending ? "Disconnecting..." : "Disconnect"}
           </button>
+        ) : isTwitterConnected ? (
+          <span className="text-xs text-gray-500">Connected by a team member</span>
         ) : (
           <button
             onClick={() => handleConnect("twitter")}

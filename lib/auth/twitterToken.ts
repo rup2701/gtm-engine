@@ -49,7 +49,7 @@ export async function getValidTwitterAccessToken(userId: string): Promise<string
   }
   if (account.needsReauth) {
     throw new TwitterReauthRequiredError(
-      'Your X connection has expired. Please disconnect and reconnect X in Settings.'
+      'Your X connection has expired. Please disconnect and reconnect X in Account Settings → Connections.'
     );
   }
 
@@ -59,7 +59,7 @@ export async function getValidTwitterAccessToken(userId: string): Promise<string
   }
   if (!account.refresh_token) {
     throw new TwitterReauthRequiredError(
-      'Your X connection has expired. Please disconnect and reconnect X in Settings.'
+      'Your X connection has expired. Please disconnect and reconnect X in Account Settings → Connections.'
     );
   }
 
@@ -108,7 +108,7 @@ export async function getValidTwitterAccessToken(userId: string): Promise<string
           .where(and(eq(accounts.userId, userId), eq(accounts.provider, 'twitter')));
 
         throw new TwitterReauthRequiredError(
-          'Your X connection has expired. Please disconnect and reconnect X in Settings.'
+          'Your X connection has expired. Please disconnect and reconnect X in Account Settings → Connections.'
         );
       }
     }
@@ -127,7 +127,7 @@ export async function getValidTwitterAccessToken(userId: string): Promise<string
     }
     if (account.needsReauth) {
       throw new TwitterReauthRequiredError(
-        'Your X connection has expired. Please disconnect and reconnect X in Settings.'
+        'Your X connection has expired. Please disconnect and reconnect X in Account Settings → Connections.'
       );
     }
     if (!isExpired(account.expires_at, nowSec())) {
