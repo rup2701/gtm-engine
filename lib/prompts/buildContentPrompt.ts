@@ -19,11 +19,11 @@ export function buildContentPrompt(ctx: ProductContext): string {
     .map((platform) => {
       switch (platform) {
         case 'twitter':
-          return '- Twitter/X: concise and punchy, usually 1–3 sentences; respect platform limits.';
+          return '- Twitter/X: concise and punchy, usually 1–3 sentences. Keep the complete post, including spaces and hashtags, at or below 280 characters.';
         case 'linkedin':
-          return '- LinkedIn: professional and readable, with a strong opening and practical insight; use short paragraphs when useful.';
+          return '- LinkedIn: professional and readable, with a strong opening and practical insight. Write 2–4 distinct paragraphs, separated by a blank line.';
         case 'reddit':
-          return '- Reddit: conversational and community-first; avoid promotional copy and invite genuine discussion when appropriate.';
+          return '- Reddit: conversational and community-first; avoid promotional copy. End the post with a genuine question, and put no text after its final question mark.';
         case 'bluesky':
           return '- BlueSky: concise, conversational, and native to a public discussion.';
         default:

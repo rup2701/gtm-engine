@@ -16,6 +16,7 @@ import { calculateGlobalPostSchedule } from '@/lib/date-utils';
 import { isValidDeliveryTimes } from '@/lib/content-limits';
 import { isValidUuid } from '@/lib/utils/uuid';
 import { buildPlatformSchedule } from '@/lib/content-schedule';
+import { validateGeneratedPosts } from '@/lib/prompts/validateGeneratedPosts';
 
 // const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
@@ -26,7 +27,7 @@ interface GeneratedPost {
   category: string;
   platform: string;
   content: string;
-  hook?: string;
+  hook: string;
 }
 
 export async function POST(req: Request) {
@@ -124,13 +125,6 @@ export async function POST(req: Request) {
         { status: 409 }
       );
     }
-    if (draftIds.length > 0 && force === true) {
-      await db
-        .delete(posts)
-        .where(and(eq(posts.productId, productId), eq(posts.weekKey, weekKey), eq(posts.status, 'draft')));
-      console.log(`Force regen: deleted ${draftIds.length} existing drafts for ${weekKey}.`);
-    }
-    
     // Build context with week + website content (for versioning)
     const contextString = `${weekKey}:${product.name}:${scrapedContext}: ${product.description}: ${product.icp}: ${product.tone}: ${product.categories}: ${product.publishTimes}: ${product.platforms}`;
 
@@ -154,6 +148,7 @@ export async function POST(req: Request) {
             ? JSON.parse(product.platforms || '[]')
             : []
       : [];
+    const categories: string[] = JSON.parse(product.categories || '[]');
 
     if (!isValidDeliveryTimes(times)) {
       return NextResponse.json(
@@ -182,7 +177,7 @@ export async function POST(req: Request) {
       description: product.description,
       icp: product.icp,
       tone: product.tone,
-      categories: JSON.parse(product.categories || '[]'),
+      categories,
       publishTimes: times,
       platformSchedule,
       platforms: platforms,
@@ -225,12 +220,34 @@ export async function POST(req: Request) {
     }
     
     // 5. Parse and save generated posts
-    const genPosts = JSON.parse(text);
+    let genPosts: unknown;
+    try {
+      genPosts = JSON.parse(text);
+    } catch {
+      return NextResponse.json(
+        { error: 'The model returned invalid JSON. Please try generating again.', code: 'INVALID_GENERATED_CONTENT' },
+        { status: 502 },
+      );
+    }
+
+    const validationErrors = validateGeneratedPosts(genPosts, platformSchedule, categories);
+    if (validationErrors.length > 0) {
+      return NextResponse.json(
+        {
+          error: `Generated content did not meet the schedule or channel requirements: ${validationErrors.join(' ')}`,
+          code: 'INVALID_GENERATED_CONTENT',
+          issues: validationErrors,
+        },
+        { status: 502 },
+      );
+    }
+
+    const validPosts = genPosts as GeneratedPost[];
     const batchId = uuidv4(); // Unique batch identifier for this generation
     // console.log('Generated posts:', genPosts); // Log the first post for debugging
 
     const seenSlots = new Set<string>();
-    const savedPostsData = genPosts
+    const savedPostsData = validPosts
       .map((post: GeneratedPost) => {
         const slotKey = `${post.day}:${post.time}`;
         const scheduledPlatform = platformSchedule[slotKey];
@@ -267,6 +284,7 @@ export async function POST(req: Request) {
           category: post.category,
           platform: scheduledPlatform,
           content: post.content,
+          hook: post.hook,
           status: 'draft',
           editedContent: null,
           publishedAt: null,
@@ -275,10 +293,17 @@ export async function POST(req: Request) {
           updatedAt: new Date(),
         };
       })
-      .filter(Boolean); // 🎯 Cleanly strips out all the 'null' entries from past slots
+      .filter((post): post is Exclude<typeof post, null> => post !== null);
 
     // 3. Only create a batch when future slots are available.
     if (savedPostsData.length > 0) {
+      if (draftIds.length > 0 && force === true) {
+        await db
+          .delete(posts)
+          .where(and(eq(posts.productId, productId), eq(posts.weekKey, weekKey), eq(posts.status, 'draft')));
+        console.log(`Force regen: deleted ${draftIds.length} existing drafts for ${weekKey}.`);
+      }
+
       await db.insert(batches).values({
         id: batchId,
         userId,
