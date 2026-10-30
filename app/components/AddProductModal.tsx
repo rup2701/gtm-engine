@@ -66,11 +66,23 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url, productId: 'temp' }),
       });
-      const scrapeData: { pages: Array<{ title: string; content: string }> } =
-        await scrapeRes.json();
+      const scrapeData: {
+        pages?: Array<{ title: string; content: string }>;
+        error?: string;
+      } = await scrapeRes.json();
+      if (!scrapeRes.ok) {
+        throw new Error(scrapeData.error || 'Could not read this website.');
+      }
+
+      const readablePages = (scrapeData.pages ?? []).filter(
+        (page) => typeof page.content === 'string' && page.content.trim().length > 0,
+      );
+      if (readablePages.length === 0) {
+        throw new Error('No readable website text was found. Check the URL or enter product details manually.');
+      }
 
       // 2. Concatenate
-      const combined = scrapeData.pages
+      const combined = readablePages
         .map((p) => `# ${p.title}\n${p.content}`)
         .join('\n\n---\n\n');
       setRawText(combined);
@@ -90,7 +102,7 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
       setStep(2);
     } catch (err) {
       console.error(err);
-      alert('Something went wrong. Try again.');
+      alert(err instanceof Error ? err.message : 'Something went wrong. Try again.');
     } finally {
       setLoading(false);
     }
@@ -219,9 +231,10 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
             />
 
             <label className="block text-xs text-gray-600 mb-1">Tone</label>
-            <input
+            <textarea
               value={tone}
               onChange={(e) => setTone(e.target.value)}
+              rows={3}
               className="w-full border border-gray-200 p-3 mb-3 rounded text-sm"
             />
 

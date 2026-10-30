@@ -68,6 +68,13 @@ ${ctx.tone || 'Clear, direct, grounded, and human. Sound like a knowledgeable pr
 - Prefer useful lessons, informed opinions, and genuine questions over empty announcements.
 - Match the configured voice without sacrificing clarity or accuracy.
 
+### BRAND VOICE, WRITING STYLE & THEMES
+- Read the website context for observable communication patterns: formality, point of view, sentence rhythm and length, vocabulary, terminology, humor, formatting, and calls to action.
+- Notice recurring themes, audience concerns, desired outcomes, and the kinds of evidence or examples the brand uses.
+- Use those signals to make posts sound recognizably aligned with the brand, while adapting to each platform and the configured tone.
+- Treat style and theme observations as guidance, not proof of factual claims. Do not infer customer results, product capabilities, or founder experience from writing style.
+- Do not copy website passages verbatim; express supported ideas freshly. If the website context is sparse, rely on the configured tone and product details instead.
+
 ### CONTENT BOUNDARIES
 - Never invent case studies, metrics, testimonials, customer stories, product capabilities, or guarantees.
 - Make factual product claims only when supported by the configured product description or website context.

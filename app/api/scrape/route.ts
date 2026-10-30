@@ -2,11 +2,14 @@ import { NextResponse } from 'next/server';
 import * as cheerio from 'cheerio';
 import pLimit from 'p-limit';
 import { db } from '@/db';
-import { scrapedContent, products } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { products, scrapedContent } from '@/db/schema';
+import { getCurrentOrgId } from '@/lib/auth';
+import { isValidUuid } from '@/lib/utils/uuid';
+import { and, eq, notInArray } from 'drizzle-orm';
 
 const MAX_DEPTH = 2;
 const MAX_PAGES = 25;
+const MAX_RESPONSE_CHARS = 20000;
 const TIMEOUT_MS = 10000;
 const USER_AGENT = 'Mozilla/5.0 (Compatible; DispatchBot/1.0)';
 
@@ -18,13 +21,38 @@ type ScrapedPage = {
 
 export async function POST(req: Request) {
   try {
-    const { url, productId } = await req.json();
+    const { url: requestedUrl, productId } = await req.json();
 
-    if (!url || !productId) {
+    if (!productId) {
       return NextResponse.json(
-        { error: 'url and productId are required' },
+        { error: 'productId is required' },
         { status: 400 }
       );
+    }
+
+    const organizationId = await getCurrentOrgId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const product = productId === 'temp'
+      ? null
+      : isValidUuid(productId)
+        ? await db.query.products.findFirst({
+            where: and(
+              eq(products.id, productId),
+              eq(products.organizationId, organizationId),
+            ),
+          })
+        : null;
+
+    if (productId !== 'temp' && !product) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+
+    const url = product?.website || requestedUrl;
+    if (typeof url !== 'string' || !url.trim()) {
+      return NextResponse.json({ error: 'A website URL is required' }, { status: 400 });
     }
 
     // Normalize root
@@ -115,31 +143,51 @@ export async function POST(req: Request) {
       }
     }
 
-    // Store in DB (delete old, insert new)
-    // await db.delete(scrapedContent).where(eq(scrapedContent.productId, productId));
+    let remainingChars = MAX_RESPONSE_CHARS;
+    const pagesWithContent = pages.flatMap((page) => {
+      if (remainingChars <= 0) return [];
 
-    // if (pages.length > 0) {
-    //   await db.insert(scrapedContent).values(
-    //     pages.map((p) => ({
-    //       productId,
-    //       url: p.url,
-    //       title: p.title,
-    //       content: p.content,
-    //     }))
-    //   );
-    // }
+      const content = page.content.slice(0, remainingChars);
+      remainingChars -= content.length;
+      return content.trim() ? [{ ...page, content }] : [];
+    });
 
-    // // Update product timestamp
-    // await db
-    //   .update(products)
-    //   .set({ lastScrapedAt: new Date(), scrapedRootUrl: origin })
-    //   .where(eq(products.id, productId));
+    if (pagesWithContent.length === 0) {
+      return NextResponse.json(
+        { error: 'No readable website text was found.' },
+        { status: 422 },
+      );
+    }
+
+    if (product) {
+      const insertedPages = await db
+        .insert(scrapedContent)
+        .values(pagesWithContent.map((page) => ({
+          productId: product.id,
+          url: page.url,
+          title: page.title,
+          content: page.content,
+        })))
+        .returning({ id: scrapedContent.id });
+
+      await db
+        .delete(scrapedContent)
+        .where(and(
+          eq(scrapedContent.productId, product.id),
+          notInArray(scrapedContent.id, insertedPages.map((page) => page.id)),
+        ));
+
+      await db
+        .update(products)
+        .set({ lastScrapedAt: new Date(), scrapedRootUrl: origin })
+        .where(eq(products.id, product.id));
+    }
 
     return NextResponse.json({
       success: true,
       pagesCrawled: pages.length,
-      pages: pages.map((p) => ({ url: p.url, title: p.title })),
-      // totalChars: pages.reduce((sum, p) => sum + p.content.length, 0),
+      pages: pagesWithContent,
+      totalChars: MAX_RESPONSE_CHARS - remainingChars,
       rootUrl: origin,
     });
   } catch (err: any) {

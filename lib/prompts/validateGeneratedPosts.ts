@@ -1,5 +1,6 @@
 type PlatformSchedule = Record<string, string>;
 
+
 const REQUIRED_FIELDS = ['day', 'time', 'platform', 'category', 'content', 'hook'] as const;
 
 export function validateGeneratedPosts(

@@ -55,10 +55,26 @@ export default function GeneratePage() {
     setErrorCode(null);
     setLoading(true);
     try {
+      if (refreshScrape) {
+        if (!productId) {
+          throw new Error('Select a workspace before refreshing its website context.');
+        }
+
+        const scrapeRes = await fetch('/api/scrape', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productId }),
+        });
+        const scrapeData = await scrapeRes.json();
+        if (!scrapeRes.ok) {
+          throw new Error(scrapeData.error || 'Could not refresh website context.');
+        }
+      }
+
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshScrape, productId, force }),
+        body: JSON.stringify({ productId, force }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -109,7 +125,7 @@ export default function GeneratePage() {
         ) : null
       }
         <div className="space-y-4 rounded-2xl bg-white p-6 ring-1 ring-black/5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
-          <h2 className="text-sm font-semibold text-gray-900">This Week's Content Engine</h2>
+          <h2 className="text-sm font-semibold text-gray-900">This Week&apos;s Content Engine</h2>
           <p className="text-sm text-gray-500">
             Generates a full week of on-brand posts for every connected channel — written from your product story, audience, and voice.
           </p>
